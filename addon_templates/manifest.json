@@ -1,0 +1,30 @@
+[
+        {
+            "version": "1.6.5",
+            "type": "coredns"
+        },
+        {
+            "version": "2.0.3",
+            "type": "kubernetes-dashboard"
+        },
+        {
+            "version": "0.30.7",
+            "type": "kubevirt"
+        },
+        {
+            "version": "0.9.3",
+            "type": "metallb"
+        },
+        {
+            "version": "0.3.6",
+            "type": "metrics-server"
+        },
+        {
+            "version": "1.14.7",
+            "type": "cluster-auto-scaler-aws"
+        },
+        {
+            "version": "1.13.8",
+            "type": "cluster-auto-scaler-azure"
+        }
+]

@@ -1,0 +1,13 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: metallb
+spec:
+  version: 0.9.3
+  operation: "install"
+  type: "metallb"
+  watch: "true"
+  override:
+    params:
+    - name: MetallbIpRange
+      value: "192.168.5.0-192.168.6.0"

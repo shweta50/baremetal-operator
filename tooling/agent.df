@@ -1,0 +1,10 @@
+FROM alpine:3.11
+
+MAINTAINER support@platform9.com
+
+RUN apk add curl gzip
+
+COPY ./bin/manager /
+COPY addon_templates /addon_templates
+RUN chmod +x /manager
+ENTRYPOINT ["/manager"]

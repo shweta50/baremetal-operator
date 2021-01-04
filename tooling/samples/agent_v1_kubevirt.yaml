@@ -1,0 +1,8 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: kubevirt
+spec:
+  type: "kubevirt"
+  version: "0.30.7"
+  operation: "install"

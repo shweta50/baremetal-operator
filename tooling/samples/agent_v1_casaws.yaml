@@ -1,0 +1,15 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: cluster-auto-scaler-aws
+spec:
+  type: cluster-auto-scaler-aws
+  version: 1.14.7
+  operation: "install"
+  watch: "true"
+  override:
+    params:
+    - name: clusterUUID
+      value: "sss-sss-sss-sss-sss"
+    - name: clusterRegion
+      value: "US_WEST"

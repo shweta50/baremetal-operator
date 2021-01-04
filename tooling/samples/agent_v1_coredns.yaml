@@ -1,0 +1,27 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: coredns
+spec:
+  type: coredns
+  version: 1.6.5
+  operation: "install"
+  watch: "true"
+  override:
+    params:
+#    - name: additionalDnsConfig
+#      value: "kfplc.com:53 {
+#      errors
+#      cache 30
+#      forward . 10.246.6.1
+#      }"
+    - name: dnsMemoryLimit
+      value: "170Mi"
+    - name: dnsDomain
+      value: "cluster.local"
+    - name: dnsServer
+      value: "10.21.0.10"
+    - name: enableAdditionalDnsConfig
+      value: "false"
+    - name: additionalDnsConfig
+      value: "ICAgICAga2ZwbGMuY29tOjUzIHsKICAgICAgZXJyb3JzCiAgICAgIGNhY2hlIDMwCiAgICAgIGZvcndhcmQgLiAxMC4yNDYuNi4xCiAgICAgIH0K"

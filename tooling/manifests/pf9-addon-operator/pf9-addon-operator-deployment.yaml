@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pf9-addon-operator
+  name: pf9-addon-operator
+  namespace: pf9-addons
+spec:
+  selector:
+    matchLabels:
+      app: pf9-addon-operator
+  template:
+    metadata:
+      labels:
+        app: pf9-addon-operator
+    spec:
+      hostNetwork: true
+      serviceAccountName: pf9-addon-operator
+      containers:
+      - name: pf9-addon-operator
+        image: platform9/pf9-addon-operator:debug
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        env:
+        - name: LOGLEVEL
+          value: "DEBUG"
+        - name: HEALTHCHECK_INTERVAL_MINS
+          value: "10"
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Equal
+          value: "true"
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
