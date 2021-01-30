@@ -24,6 +24,7 @@ import (
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/pkg/apply"
 	"github.com/platform9/pf9-addon-operator/pkg/objects"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 //EnsureDirStructure ensures expected dir structure
@@ -238,4 +239,42 @@ func renderTemplateToFile(config map[string]interface{}, t *template.Template, f
 	}
 	f.Close()
 	return nil
+}
+
+//GetDeployment gets a Deployment
+func GetDeployment(ns, name string, c client.Client) (*appsv1.Deployment, error) {
+	d := &appsv1.Deployment{}
+
+	err := c.Get(context.Background(), client.ObjectKey{
+		Namespace: ns,
+		Name:      name,
+	}, d)
+	if err != nil {
+		if k8serror.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return d, nil
+}
+
+//GetDaemonset gets a Daemonset
+func GetDaemonset(ns, name string, c client.Client) (*appsv1.DaemonSet, error) {
+	d := &appsv1.DaemonSet{}
+
+	err := c.Get(context.Background(), client.ObjectKey{
+		Namespace: ns,
+		Name:      name,
+	}, d)
+	if err != nil {
+		if k8serror.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return d, nil
 }

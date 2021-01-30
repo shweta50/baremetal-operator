@@ -10,11 +10,13 @@ import (
 )
 
 const (
-	dashboardNS        = "kubernetes-dashboard"
-	dashboardSecret    = "kubernetes-dashboard-certs"
-	dashboardSecretKey = "dashboard.key"
-	dashboardSecretCrt = "dashboard.crt"
-	dashboardDir       = "dashboard"
+	dashboardNS            = "kubernetes-dashboard"
+	dashboardSecret        = "kubernetes-dashboard-certs"
+	dashboardSecretKey     = "dashboard.key"
+	dashboardSecretCrt     = "dashboard.crt"
+	dashboardDir           = "dashboard"
+	dashboardDeployScraper = "dashboard-metrics-scraper"
+	dashboardDeploy        = "kubernetes-dashboard"
 )
 
 // DashboardClient represents the kube dashboard addon
@@ -37,7 +39,23 @@ func getKubeDashboard(c client.Client, version string, params map[string]interfa
 
 //Health checks health of the instance
 func (c *DashboardClient) Health() (bool, error) {
-	return true, nil
+	deployScraper, err := util.GetDeployment(dashboardNS, dashboardDeployScraper, c.c)
+	if err != nil {
+		log.Errorf("Failed to get deployment: %s", err)
+		return false, err
+	}
+
+	deploy, err := util.GetDeployment(dashboardNS, dashboardDeploy, c.c)
+	if err != nil {
+		log.Errorf("Failed to get deployment: %s", err)
+		return false, err
+	}
+
+	if deployScraper.Status.ReadyReplicas > 0 && deploy.Status.ReadyReplicas > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 //Upgrade upgrades an metallb instance

@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	casAzureNS  = "kube-system"
-	casAzureDir = "cluster-autoscaler/azure"
+	casAzureNS     = "kube-system"
+	casAzureDir    = "cluster-autoscaler/azure"
+	casAzureDeploy = "cluster-autoscaler"
 )
 
 // CAutoScalerAzureClient represents implementation for interacting with plain K8s cluster
@@ -33,7 +34,17 @@ func getCAutoScalerAzure(c client.Client, version string, params map[string]inte
 
 //Health checks health of the instance
 func (c *CAutoScalerAzureClient) Health() (bool, error) {
-	return true, nil
+	deploy, err := util.GetDeployment(casAzureNS, casAzureDeploy, c.c)
+	if err != nil {
+		log.Errorf("Failed to get deployment: %s", err)
+		return false, err
+	}
+
+	if deploy.Status.ReadyReplicas > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 //Upgrade upgrades an CAutoScalerAzure instance

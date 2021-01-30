@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	casAWSNS  = "kube-system"
-	casAWSDir = "cluster-autoscaler/aws"
+	casAWSNS     = "kube-system"
+	casAWSDir    = "cluster-autoscaler/aws"
+	casAWSDeploy = "cluster-autoscaler"
 )
 
 // CAutoScalerAwsClient represents implementation for interacting with plain K8s cluster
@@ -33,7 +34,17 @@ func getCAutoScalerAws(c client.Client, version string, params map[string]interf
 
 //Health checks health of the instance
 func (c *CAutoScalerAwsClient) Health() (bool, error) {
-	return true, nil
+	deploy, err := util.GetDeployment(casAWSNS, casAWSDeploy, c.c)
+	if err != nil {
+		log.Errorf("Failed to get deployment: %s", err)
+		return false, err
+	}
+
+	if deploy.Status.ReadyReplicas > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 //Upgrade upgrades an CAutoScalerAws instance

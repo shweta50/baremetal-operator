@@ -12,6 +12,7 @@ const (
 	corednsNS     = "kube-system"
 	corednsSecret = "memberlist"
 	dnsDir        = "coredns"
+	corednsDeploy = "coredns"
 )
 
 // CoreDNSClient represents implementation for interacting with plain K8s cluster
@@ -34,7 +35,18 @@ func getCoreDNS(c client.Client, version string, params map[string]interface{}) 
 
 //Health checks health of the instance
 func (c *CoreDNSClient) Health() (bool, error) {
-	return true, nil
+
+	d, err := util.GetDeployment(corednsNS, corednsDeploy, c.c)
+	if err != nil {
+		log.Errorf("Failed to get rc: %s", err)
+		return false, err
+	}
+
+	if d.Status.ReadyReplicas > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 //Upgrade upgrades an coredns instance

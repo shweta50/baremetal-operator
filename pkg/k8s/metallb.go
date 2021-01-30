@@ -13,6 +13,8 @@ const (
 	metallbSecret    = "memberlist"
 	metallbSecretKey = "secretkey"
 	metallbDir       = "metallb"
+	metallbDeploy    = "controller"
+	metallbDaemonset = "speaker"
 )
 
 // MetallbClient represents implementation for interacting with plain K8s cluster
@@ -35,7 +37,23 @@ func getMetalLB(c client.Client, version string, params map[string]interface{}) 
 
 //Health checks health of the instance
 func (c *MetallbClient) Health() (bool, error) {
-	return true, nil
+	daemonset, err := util.GetDaemonset(metallbNS, metallbDaemonset, c.c)
+	if err != nil {
+		log.Errorf("Failed to get daemonset: %s", err)
+		return false, err
+	}
+
+	deploy, err := util.GetDeployment(metallbNS, metallbDeploy, c.c)
+	if err != nil {
+		log.Errorf("Failed to get daemonset: %s", err)
+		return false, err
+	}
+
+	if daemonset.Status.NumberReady > 0 && deploy.Status.ReadyReplicas > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 //Upgrade upgrades an metallb instance
