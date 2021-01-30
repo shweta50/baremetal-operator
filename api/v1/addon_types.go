@@ -28,16 +28,16 @@ type AddonSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Version   string   `json:"version"`
-	Type      string   `json:"type"`
-	Operation string   `json:"operation"`
-	Override  Override `json:"override,omitempty"`
-	Watch     string   `json:"watch,omitempty"`
+	Version string `json:"version"`
+	Type    string `json:"type"`
+	//Operation string   `json:"operation,omitempty"`
+	Override Override `json:"override,omitempty"`
+	Watch    bool     `json:"watch,omitempty"`
 }
 
 // Override defines params to override in the addon
 type Override struct {
-	Params []Params `json:"params"`
+	Params []Params `json:"params,omitempty"`
 }
 
 // Params defines params to override in the addon
@@ -50,12 +50,12 @@ type Params struct {
 type AddonStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ObservedGeneration   int64  `json:"observedGeneration,omitempty"`
-	CurrentState         string `json:"current_state,omitempty"`
-	LastOperation        string `json:"last_operation,omitempty"`
-	LastOperationResult  string `json:"last_operation_result,omitempty"`
-	LastOperationMessage string `json:"last_operation_message,omitempty"`
-	Healthy              string `json:"healthy,omitempty"`
+	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
+	CurrentState       string `json:"currentState,omitempty"`
+	Healthy            bool   `json:"healthy,omitempty"`
+	//LastOperation        string `json:"last_operation,omitempty"`
+	//LastOperationResult  string `json:"last_operation_result,omitempty"`
+	//LastOperationMessage string `json:"last_operation_message,omitempty"`
 }
 
 // Addon is the Schema for the addons API

@@ -73,7 +73,7 @@ func main() {
 	}
 	// +kubebuilder:scaffold:builder
 
-	//go healthCheck(mgr.GetClient())
+	go healthCheck(mgr.GetClient())
 
 	http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
 		api.AvailableAddons(w, req)
@@ -112,7 +112,7 @@ func setLogLevel() {
 
 func healthCheck(cl client.Client) {
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(5 * time.Minute)
 
 	healthCheckInterval, _ := getEnv("HEALTHCHECK_INTERVAL_MINS", "5")
 
@@ -124,7 +124,7 @@ func healthCheck(cl client.Client) {
 
 	for {
 		if err := w.HealthCheck(cl); err != nil {
-			log.Error(err, "unable to process addon")
+			log.Error(err, "unable to health check addons")
 			continue
 		}
 		time.Sleep(time.Duration(healthCheckInterval) * time.Minute)

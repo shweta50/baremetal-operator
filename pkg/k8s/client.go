@@ -7,7 +7,7 @@ import (
 
 // Client handles installation of specific Addons
 type Client interface {
-	Get() error
+	Health() (bool, error)
 	Upgrade() error
 	Install() error
 	Uninstall() error

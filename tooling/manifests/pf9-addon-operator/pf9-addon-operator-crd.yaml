@@ -36,10 +36,8 @@ spec:
         spec:
           description: AddonSpec defines the desired state of Addon
           properties:
-            operation:
-              type: string
             override:
-              description: Override defines params to override in the addon
+              description: Operation string   `json:"operation,omitempty"`
               properties:
                 params:
                   items:
@@ -54,33 +52,24 @@ spec:
                     - value
                     type: object
                   type: array
-              required:
-              - params
               type: object
             type:
               type: string
             version:
               type: string
             watch:
-              type: string
+              type: boolean
           required:
-          - operation
           - type
           - version
           type: object
         status:
           description: AddonStatus defines the observed state of Addon
           properties:
-            current_state:
+            currentState:
               type: string
             healthy:
-              type: string
-            last_operation:
-              type: string
-            last_operation_message:
-              type: string
-            last_operation_result:
-              type: string
+              type: boolean
             observedGeneration:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "make" to regenerate code after modifying

@@ -33,9 +33,9 @@ func getMetalLB(c client.Client, version string, params map[string]interface{}) 
 	return cl
 }
 
-//Get retrieves a metallb instance
-func (c *MetallbClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *MetallbClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an metallb instance

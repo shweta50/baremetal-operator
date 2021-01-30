@@ -31,9 +31,9 @@ func getCAutoScalerAzure(c client.Client, version string, params map[string]inte
 	return cl
 }
 
-//Get retrieves a CAutoScalerAzure instance
-func (c *CAutoScalerAzureClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *CAutoScalerAzureClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an CAutoScalerAzure instance

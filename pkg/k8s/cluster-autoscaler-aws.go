@@ -31,9 +31,9 @@ func getCAutoScalerAws(c client.Client, version string, params map[string]interf
 	return cl
 }
 
-//Get retrieves a CAutoScalerAws instance
-func (c *CAutoScalerAwsClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *CAutoScalerAwsClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an CAutoScalerAws instance

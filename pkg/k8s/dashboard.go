@@ -35,9 +35,9 @@ func getKubeDashboard(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
-//Get retrieves a metallb instance
-func (c *DashboardClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *DashboardClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an metallb instance

@@ -41,21 +41,18 @@ type AddonReconciler struct {
 //Reconcile loop
 func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-
-	//log := r.Log.WithValues("addon", req.NamespacedName)
 	var addon = agentv1.Addon{}
 	if err := r.Get(ctx, req.NamespacedName, &addon); err != nil {
 		log.Error(err, "unable to fetch Addon config")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	//log.Debugf("Addon operation: %s State: %s", addon.Spec.Operation, addon.Status.CurrentState)
-	//log.Debugf("Generation metadata: %d status: %d", addon.ObjectMeta.Generation, addon.Status.ObservedGeneration)
-
 	if addon.ObjectMeta.Generation == addon.Status.ObservedGeneration {
-		//log.Debug("Ignoring status update")
+		log.Infof("Ignoring reconcile due to previous status update: %s", addon.Name)
 		return ctrl.Result{}, nil
 	}
+
+	operation := getOperation(&addon)
 
 	w, err := k8s.New("k8s", r.Client)
 	if err != nil {
@@ -63,14 +60,26 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	if err := w.SyncEvent(&addon); err != nil {
+	if err := w.SyncEvent(&addon, operation); err != nil {
 		log.Error(err, "unable to process addon")
 		return ctrl.Result{}, err
 	}
 
 	addon.Status.ObservedGeneration = addon.ObjectMeta.Generation
-	if err := r.Status().Update(ctx, &addon); err != nil {
-		log.Error(err, "unable to update status")
+	err = r.Status().Update(ctx, &addon)
+	if err != nil {
+		log.Error(err, "Unable to update status of Addons object")
+		return ctrl.Result{}, err
+	}
+
+	//If finalizer is removed in k8s.install it is not removed after above
+	//status update call, need to remove it after updating status, only then
+	//it is removed from the Addon spec
+	setFinalizer(&addon, operation)
+
+	err = r.Update(ctx, &addon)
+	if err != nil {
+		log.Error(err, "Unable to update Addons object")
 		return ctrl.Result{}, err
 	}
 
@@ -82,4 +91,32 @@ func (r *AddonReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&agentv1.Addon{}).
 		Complete(r)
+}
+
+func setFinalizer(addon *agentv1.Addon, operation string) {
+	switch operation {
+	case "install":
+		addon.ObjectMeta.Finalizers = []string{"addons.finalizer.pf9.io"}
+	case "uninstall":
+		addon.ObjectMeta.Finalizers = []string{}
+	}
+}
+
+func getOperation(addon *agentv1.Addon) string {
+	operation := ""
+	finalizers := len(addon.ObjectMeta.Finalizers)
+
+	if addon.ObjectMeta.DeletionTimestamp.IsZero() {
+		operation = "install"
+		log.Infof("Installing ClusterAddon: %s finalizers: %d", addon.Name, finalizers)
+	} else {
+		operation = "uninstall"
+		if finalizers >= 0 {
+			log.Infof("Uninstalling ClusterAddons: %s", addon.Name)
+		} else {
+			log.Infof("Uninstalling ClusterAddons: %s no Finalizers found", addon.Name)
+		}
+	}
+
+	return operation
 }

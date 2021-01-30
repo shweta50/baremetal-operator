@@ -31,9 +31,9 @@ func getMetricsServer(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
-//Get retrieves a MetricsServer instance
-func (c *MetricsServerClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *MetricsServerClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an MetricsServer instance

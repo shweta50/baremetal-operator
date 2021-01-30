@@ -32,9 +32,9 @@ func getCoreDNS(c client.Client, version string, params map[string]interface{}) 
 	return cl
 }
 
-//Get retrieves a coredns instance
-func (c *CoreDNSClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *CoreDNSClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an coredns instance
@@ -44,7 +44,6 @@ func (c *CoreDNSClient) Upgrade() error {
 
 //Install installs an coredns instance
 func (c *CoreDNSClient) Install() error {
-
 	inputPath, outputPath, err := util.EnsureDirStructure(dnsDir, c.version)
 	if err != nil {
 		return err

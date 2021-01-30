@@ -6,7 +6,7 @@ spec:
   type: cluster-auto-scaler-aws
   version: 1.14.7
   operation: "install"
-  watch: "true"
+  watch: true
   override:
     params:
     - name: clusterUUID

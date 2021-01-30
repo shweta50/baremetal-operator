@@ -31,9 +31,9 @@ func getKubeVirt(c client.Client, version string, params map[string]interface{})
 	return cl
 }
 
-//Get retrieves a KubeVirt instance
-func (c *KubeVirtClient) Get() error {
-	return nil
+//Health checks health of the instance
+func (c *KubeVirtClient) Health() (bool, error) {
+	return true, nil
 }
 
 //Upgrade upgrades an KubeVirt instance
