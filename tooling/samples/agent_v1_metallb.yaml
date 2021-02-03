@@ -4,9 +4,8 @@ metadata:
   name: metallb
 spec:
   version: 0.9.3
-  operation: "install"
   type: "metallb"
-  watch: "true"
+  watch: true
   override:
     params:
     - name: MetallbIpRange

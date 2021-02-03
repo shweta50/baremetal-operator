@@ -3,9 +3,11 @@ package k8s
 import (
 	"path/filepath"
 
-	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
 
 const (
@@ -33,6 +35,14 @@ func getMetalLB(c client.Client, version string, params map[string]interface{}) 
 	}
 
 	return cl
+}
+
+//ValidateParams validates params of an addon
+func (c *MetallbClient) ValidateParams() (bool, error) {
+	if _, ok := c.overrideParams["MetallbIpRange"]; !ok {
+		return false, addonerr.InvalidParams("MetallbIpRange")
+	}
+	return true, nil
 }
 
 //Health checks health of the instance

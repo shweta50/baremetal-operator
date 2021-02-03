@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
@@ -61,7 +62,7 @@ func GetOverrideParams(addon *agentv1.Addon) (map[string]interface{}, error) {
 
 	for _, p := range addon.Spec.Override.Params {
 		log.Debugf("Adding param %s:%s", p.Name, p.Value)
-		if p.Name == "additionalDnsConfig" {
+		if strings.HasPrefix(p.Name, "base64Enc") {
 			b, _ := base64.StdEncoding.DecodeString(p.Value)
 			p.Value = string(b)
 			log.Debugf("Decoded param %s:%s", p.Name, p.Value)

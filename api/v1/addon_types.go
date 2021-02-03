@@ -30,7 +30,6 @@ type AddonSpec struct {
 
 	Version string `json:"version"`
 	Type    string `json:"type"`
-	//Operation string   `json:"operation,omitempty"`
 	Override Override `json:"override,omitempty"`
 	Watch    bool     `json:"watch,omitempty"`
 }
@@ -53,9 +52,6 @@ type AddonStatus struct {
 	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
 	CurrentState       string `json:"currentState,omitempty"`
 	Healthy            bool   `json:"healthy,omitempty"`
-	//LastOperation        string `json:"last_operation,omitempty"`
-	//LastOperationResult  string `json:"last_operation_result,omitempty"`
-	//LastOperationMessage string `json:"last_operation_message,omitempty"`
 }
 
 // Addon is the Schema for the addons API

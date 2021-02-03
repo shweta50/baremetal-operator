@@ -167,6 +167,11 @@ func (w *Watcher) InstallPkg(addon *agentv1.Addon) error {
 
 	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.c)
 
+	if ok, err := addonClient.ValidateParams(); !ok {
+		log.Errorf("Error validating addon params: %s", err)
+		return err
+	}
+
 	if err := addonClient.Install(); err != nil {
 		log.Errorf("Error installing addon: %s", err)
 		return err

@@ -37,7 +37,7 @@ spec:
           description: AddonSpec defines the desired state of Addon
           properties:
             override:
-              description: Operation string   `json:"operation,omitempty"`
+              description: Override defines params to override in the addon
               properties:
                 params:
                   items:

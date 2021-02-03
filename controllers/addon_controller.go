@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
+	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
 	"github.com/platform9/pf9-addon-operator/pkg/k8s"
 )
 
@@ -62,7 +63,15 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if err := w.SyncEvent(&addon, operation); err != nil {
 		log.Error(err, "unable to process addon")
-		return ctrl.Result{}, err
+
+		addon.Status.ObservedGeneration = addon.ObjectMeta.Generation
+		err = r.Status().Update(ctx, &addon)
+		if err != nil {
+			log.Error(err, "Unable to update status of Addons object")
+			return ctrl.Result{}, err
+		}
+
+		return addonerr.ProcessError(err)
 	}
 
 	addon.Status.ObservedGeneration = addon.ObjectMeta.Generation

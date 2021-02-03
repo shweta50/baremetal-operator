@@ -31,6 +31,12 @@ func getKubeVirt(c client.Client, version string, params map[string]interface{})
 	return cl
 }
 
+//ValidateParams validates params of an addon
+func (c *KubeVirtClient) ValidateParams() (bool, error) {
+
+	return true, nil
+}
+
 //Health checks health of the instance
 func (c *KubeVirtClient) Health() (bool, error) {
 	return true, nil

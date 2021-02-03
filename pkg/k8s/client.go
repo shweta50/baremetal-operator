@@ -8,6 +8,7 @@ import (
 // Client handles installation of specific Addons
 type Client interface {
 	Health() (bool, error)
+	ValidateParams() (bool, error)
 	Upgrade() error
 	Install() error
 	Uninstall() error

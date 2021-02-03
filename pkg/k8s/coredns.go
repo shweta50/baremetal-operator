@@ -3,9 +3,11 @@ package k8s
 import (
 	"path/filepath"
 
-	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
 
 const (
@@ -31,6 +33,35 @@ func getCoreDNS(c client.Client, version string, params map[string]interface{}) 
 	}
 
 	return cl
+}
+
+//ValidateParams validates params of an addon
+func (c *CoreDNSClient) ValidateParams() (bool, error) {
+
+	if _, ok := c.overrideParams["dnsDomain"]; !ok {
+		return false, addonerr.InvalidParams("dnsDomain")
+	}
+
+	if _, ok := c.overrideParams["dnsMemoryLimit"]; !ok {
+		return false, addonerr.InvalidParams("dnsMemoryLimit")
+	}
+
+	if _, ok := c.overrideParams["dnsServer"]; !ok {
+		return false, addonerr.InvalidParams("dnsServer")
+	}
+
+	if b, ok := c.overrideParams["enableAdditionalDnsConfig"]; ok {
+		enable, isStr := b.(string)
+		if isStr && enable == "true" {
+			if _, ok := c.overrideParams["base64EncAdditionalDnsConfig"]; !ok {
+				return false, addonerr.InvalidParams("AdditionalDnsConfig")
+			}
+		}
+	} else {
+		return false, addonerr.InvalidParams("enableAdditionalDnsConfig")
+	}
+
+	return true, nil
 }
 
 //Health checks health of the instance

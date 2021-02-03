@@ -3,6 +3,7 @@ package k8s
 import (
 	"path/filepath"
 
+	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,6 +31,19 @@ func getCAutoScalerAws(c client.Client, version string, params map[string]interf
 	}
 
 	return cl
+}
+
+//ValidateParams validates params of an addon
+func (c *CAutoScalerAwsClient) ValidateParams() (bool, error) {
+	if _, ok := c.overrideParams["clusterUUID"]; !ok {
+		return false, addonerr.InvalidParams("clusterUUID")
+	}
+
+	if _, ok := c.overrideParams["clusterRegion"]; !ok {
+		return false, addonerr.InvalidParams("clusterRegion")
+	}
+
+	return true, nil
 }
 
 //Health checks health of the instance

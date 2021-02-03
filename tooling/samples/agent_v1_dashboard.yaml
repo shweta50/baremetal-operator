@@ -4,5 +4,5 @@ metadata:
   name: kube-dashboard
 spec:
   version: 2.0.3
-  operation: "install"
   type: "kubernetes-dashboard"
+  watch: true

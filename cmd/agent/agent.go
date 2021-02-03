@@ -8,7 +8,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -22,7 +21,6 @@ import (
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/controllers"
-	api "github.com/platform9/pf9-addon-operator/pkg/api"
 	"github.com/platform9/pf9-addon-operator/pkg/k8s"
 	// +kubebuilder:scaffold:imports
 )
@@ -75,7 +73,7 @@ func main() {
 
 	go healthCheck(mgr.GetClient())
 
-	http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
+	/*http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
 		api.AvailableAddons(w, req)
 	})
 
@@ -83,7 +81,7 @@ func main() {
 		api.Status(w, req)
 	})
 
-	go http.ListenAndServe("0.0.0.0:8080", nil)
+	go http.ListenAndServe("0.0.0.0:8090", nil)*/
 
 	//setupLog.Info("starting manager")
 	log.Info("starting manager")

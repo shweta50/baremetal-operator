@@ -37,6 +37,12 @@ func getKubeDashboard(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
+//ValidateParams validates params of an addon
+func (c *DashboardClient) ValidateParams() (bool, error) {
+
+	return true, nil
+}
+
 //Health checks health of the instance
 func (c *DashboardClient) Health() (bool, error) {
 	deployScraper, err := util.GetDeployment(dashboardNS, dashboardDeployScraper, c.c)

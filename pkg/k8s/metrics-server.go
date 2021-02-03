@@ -32,6 +32,12 @@ func getMetricsServer(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
+//ValidateParams validates params of an addon
+func (c *MetricsServerClient) ValidateParams() (bool, error) {
+
+	return true, nil
+}
+
 //Health checks health of the instance
 func (c *MetricsServerClient) Health() (bool, error) {
 

@@ -5,8 +5,7 @@ metadata:
 spec:
   type: coredns
   version: 1.6.5
-  operation: "install"
-  watch: "true"
+  watch: true
   override:
     params:
 #    - name: additionalDnsConfig
@@ -23,5 +22,5 @@ spec:
       value: "10.21.0.10"
     - name: enableAdditionalDnsConfig
       value: "false"
-    - name: additionalDnsConfig
+    - name: base64EncAdditionalDnsConfig
       value: "ICAgICAga2ZwbGMuY29tOjUzIHsKICAgICAgZXJyb3JzCiAgICAgIGNhY2hlIDMwCiAgICAgIGZvcndhcmQgLiAxMC4yNDYuNi4xCiAgICAgIH0K"

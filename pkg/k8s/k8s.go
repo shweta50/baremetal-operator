@@ -111,8 +111,7 @@ func (w *Watcher) HealthCheck(cl client.Client) error {
 	}
 
 	for _, a := range addonList.Items {
-
-		if !strings.HasPrefix(a.Status.CurrentState, "install-") {
+		if !strings.HasPrefix(a.Status.CurrentState, "install-success") {
 			continue
 		}
 
