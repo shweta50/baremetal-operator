@@ -22,6 +22,7 @@ import (
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/controllers"
 	"github.com/platform9/pf9-addon-operator/pkg/k8s"
+	"github.com/platform9/pf9-addon-operator/pkg/token"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -70,8 +71,7 @@ func main() {
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
-
-	go healthCheck(mgr.GetClient())
+	go healthCheck()
 
 	/*http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
 		api.AvailableAddons(w, req)
@@ -108,11 +108,18 @@ func setLogLevel() {
 	}
 }
 
-func healthCheck(cl client.Client) {
+func healthCheck() {
 
-	time.Sleep(5 * time.Minute)
+	cl, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if err != nil {
+		panic(fmt.Sprintf("Error creating client for healthcheck: %s", err))
+	}
 
-	healthCheckInterval, _ := getEnv("HEALTHCHECK_INTERVAL_MINS", "5")
+	time.Sleep(30 * time.Second)
+
+	healthCheckInterval, _ := getEnvInt("HEALTHCHECK_INTERVAL_SECS", "150")
+	clusterID := getEnvUUID("CLUSTER_ID")
+	projectID := getEnvUUID("PROJECT_ID")
 
 	w, err := k8s.New("k8s", cl)
 	if err != nil {
@@ -121,19 +128,31 @@ func healthCheck(cl client.Client) {
 	}
 
 	for {
-		if err := w.HealthCheck(cl); err != nil {
+		if err := w.HealthCheck(clusterID, projectID); err != nil {
 			log.Error(err, "unable to health check addons")
-			continue
 		}
-		time.Sleep(time.Duration(healthCheckInterval) * time.Minute)
+		time.Sleep(time.Duration(healthCheckInterval) * time.Second)
 	}
 }
 
-func getEnv(env, def string) (int, error) {
+func getEnvInt(env, def string) (int, error) {
 	value, exists := os.LookupEnv(env)
 	if !exists {
 		value = def
 	}
 
 	return strconv.Atoi(value)
+}
+
+func getEnvUUID(env string) string {
+	value, exists := os.LookupEnv(env)
+	if !exists {
+		panic(fmt.Sprintf("%s not defined as env variable", env))
+	}
+
+	if !token.IsValidUUID(value) {
+		panic(fmt.Sprintf("Invalid UUID: %s", env))
+	}
+
+	return value
 }

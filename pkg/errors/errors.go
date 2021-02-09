@@ -9,6 +9,8 @@ import (
 const (
 	// IP Indicates invalid parameters specified
 	IP = 1
+	// NA indicates not authorized
+	NA = 4
 )
 
 // AddonError represents application errors for Addon
@@ -45,6 +47,24 @@ func InvalidParams(msg string) AddonError {
 func IsInvalidParams(e error) bool {
 	ae, ok := e.(AddonError)
 	if ok && ae.Code == IP {
+		return true
+	}
+
+	return false
+}
+
+// NotAuthorized is thrown when user is not authorized to make an API call
+func NotAuthorized() AddonError {
+	return AddonError{
+		Code:   NA,
+		Reason: fmt.Sprintf("Not authorized"),
+	}
+}
+
+// IsNotAuthorized checks if error is of type NotAuthorized
+func IsNotAuthorized(e error) bool {
+	ae, ok := e.(AddonError)
+	if ok && ae.Code == NA {
 		return true
 	}
 

@@ -1,0 +1,8 @@
+qbert:
+  url: "https://du-test-kplane-mayuresh-3724.platform9.horse/qbert"
+keystone:
+  user: "appbert"
+  password: "LfFQm2VU7ohHLZl5"
+  url: "https://du-test-kplane-mayuresh-3724.platform9.horse/keystone/v3"
+  project: "services"
+  domain: "default"

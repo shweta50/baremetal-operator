@@ -21,17 +21,12 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	//	v1 "k8s.io/api/core/v1"
-	//v1 "k8s.io/api/core/v1"
-
-	//"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -41,9 +36,8 @@ import (
 
 // Watcher watches for changes in kubernetes events
 type Watcher struct {
-	c client.Client
-	//client kubernetes.Interface
-	//lock sync.Mutex
+	cl  client.Client
+	ctx context.Context
 }
 
 // New returns new instance of watcher
@@ -70,9 +64,8 @@ func New(mode string, c client.Client) (*Watcher, error) {
 	}*/
 
 	return &Watcher{
-		c: c,
-		//client: client,
-		//lock: sync.Mutex{},
+		cl:  c,
+		ctx: context.Background(),
 	}, nil
 }
 
@@ -82,7 +75,7 @@ func (w *Watcher) ListAddons() ([]objects.AddonState, error) {
 	var currState []objects.AddonState
 
 	addonList := &agentv1.AddonList{}
-	err := w.c.List(context.Background(), addonList)
+	err := w.cl.List(w.ctx, addonList)
 	if err != nil {
 		log.Error("failed to list addons", err)
 		return nil, err
@@ -98,46 +91,6 @@ func (w *Watcher) ListAddons() ([]objects.AddonState, error) {
 	}
 
 	return currState, nil
-}
-
-//HealthCheck checks health of all installed addons
-func (w *Watcher) HealthCheck(cl client.Client) error {
-
-	addonList := &agentv1.AddonList{}
-	err := cl.List(context.Background(), addonList)
-	if err != nil {
-		log.Error("failed to list addons", err)
-		return err
-	}
-
-	for _, a := range addonList.Items {
-		if !strings.HasPrefix(a.Status.CurrentState, "install-success") {
-			continue
-		}
-
-		healthy := false
-		log.Debugf("Checking health of: %s/%s", a.Namespace, a.Name)
-
-		addonClient := getAddonClient(a.Spec.Type, a.Spec.Version, nil, w.c)
-
-		if healthy, err = addonClient.Health(); err != nil {
-			log.Errorf("Error getting health of: %s %s", a.Name, err)
-			return err
-		}
-
-		if a.Status.Healthy == healthy {
-			continue
-		}
-
-		log.Infof("Setting health for addon: %s/%s with %t", a.Namespace, a.Name, healthy)
-		a.Status.Healthy = healthy
-		if err = cl.Status().Update(context.Background(), &a); err != nil {
-			log.Error("failed to update addon status", err)
-			continue
-		}
-	}
-
-	return nil
 }
 
 //SyncEvent processes new addon event
@@ -165,6 +118,7 @@ func (w *Watcher) install(addon *agentv1.Addon) error {
 
 	if err = w.InstallPkg(addon); err != nil {
 		addon.Status.CurrentState = fmt.Sprintf("install-error:%s", err)
+		addon.Status.Healthy = false
 		//addon.Status.LastOperationResult = "failure"
 		//addon.Status.LastOperationMessage = fmt.Sprintf("%s", err)
 	} else {

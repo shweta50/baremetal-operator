@@ -165,7 +165,7 @@ func (w *Watcher) InstallPkg(addon *agentv1.Addon) error {
 		return err
 	}
 
-	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.c)
+	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.cl)
 
 	if ok, err := addonClient.ValidateParams(); !ok {
 		log.Errorf("Error validating addon params: %s", err)
@@ -192,7 +192,7 @@ func (w *Watcher) UninstallPkg(addon *agentv1.Addon) error {
 		return err
 	}
 
-	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.c)
+	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.cl)
 
 	if err := addonClient.Uninstall(); err != nil {
 		log.Errorf("Error installing addon: %s", err)
@@ -214,7 +214,7 @@ func (w *Watcher) UpgradePkg(addon *agentv1.Addon) error {
 		return err
 	}
 
-	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.c)
+	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.cl)
 
 	if err := addonClient.Upgrade(); err != nil {
 		log.Errorf("Error upgrading addon: %s", err)
@@ -257,7 +257,7 @@ func (w *Watcher) installPkg(text string, addon *agentv1.Addon) error {
 
 	for _, obj := range resourceList {
 		log.Infof("Creating %s name: %s", obj.GetKind(), obj.GetName())
-		err := apply.ApplyObject(context.Background(), w.c, obj)
+		err := apply.ApplyObject(context.Background(), w.cl, obj)
 		if err != nil {
 			log.Error(err, "Error applying unstructured object")
 			return err

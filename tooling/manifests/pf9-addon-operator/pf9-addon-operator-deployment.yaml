@@ -15,7 +15,6 @@ spec:
       labels:
         app: pf9-addon-operator
     spec:
-      hostNetwork: true
       serviceAccountName: pf9-addon-operator
       containers:
       - name: pf9-addon-operator
