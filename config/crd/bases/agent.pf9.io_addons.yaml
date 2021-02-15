@@ -36,6 +36,10 @@ spec:
         spec:
           description: AddonSpec defines the desired state of Addon
           properties:
+            clusterID:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
+              type: string
             override:
               description: Override defines params to override in the addon
               properties:
@@ -60,6 +64,7 @@ spec:
             watch:
               type: boolean
           required:
+          - clusterID
           - type
           - version
           type: object

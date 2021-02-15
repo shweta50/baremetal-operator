@@ -86,9 +86,43 @@ func (w *Watcher) getAddons() (map[string]agentv1.Addon, error) {
 
 func updateAddon(from *agentv1.Addon, to *agentv1.Addon) {
 	to.Spec.Version = from.Spec.Version
+	to.Spec.ClusterID = from.Spec.ClusterID
 	to.Spec.Type = from.Spec.Type
 	to.Spec.Watch = from.Spec.Watch
 	to.Spec.Override.Params = from.Spec.Override.Params
+}
+
+func convertToClsAddon(addon *agentv1.Addon) v1alpha2.ClusterAddon {
+
+	clsAddon := v1alpha2.ClusterAddon{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "pf9-addons",
+			Name:      addon.Name,
+			Labels: map[string]string{
+				"clusterid": addon.Spec.ClusterID,
+				"type":      addon.Spec.Type,
+			},
+		},
+		Spec: v1alpha2.ClusterAddonSpec{
+			Version:   addon.Spec.Version,
+			Type:      addon.Spec.Type,
+			ClusterID: addon.Spec.ClusterID,
+			Watch:     addon.Spec.Watch,
+		},
+	}
+
+	if len(addon.Spec.Override.Params) > 0 {
+		clsAddon.Spec.Override.Params = []v1alpha2.Params{}
+		for _, p := range addon.Spec.Override.Params {
+			param := v1alpha2.Params{
+				Name:  p.Name,
+				Value: p.Value,
+			}
+			clsAddon.Spec.Override.Params = append(clsAddon.Spec.Override.Params, param)
+		}
+	}
+
+	return clsAddon
 }
 
 func convertToAddon(clsAddon *v1alpha2.ClusterAddon) agentv1.Addon {
@@ -98,9 +132,10 @@ func convertToAddon(clsAddon *v1alpha2.ClusterAddon) agentv1.Addon {
 			Name:      clsAddon.Name,
 		},
 		Spec: agentv1.AddonSpec{
-			Version: clsAddon.Spec.Version,
-			Type:    clsAddon.Spec.Type,
-			Watch:   clsAddon.Spec.Watch,
+			Version:   clsAddon.Spec.Version,
+			ClusterID: clsAddon.Spec.ClusterID,
+			Type:      clsAddon.Spec.Type,
+			Watch:     clsAddon.Spec.Watch,
 		},
 	}
 
@@ -135,12 +170,7 @@ func (w *Watcher) HealthCheck(clusterID, projectID string) error {
 //sync the state of ClusterAddon objects on sunpike with local Addon objects
 func (w *Watcher) syncClusterAddons(clusterID, projectID string) error {
 
-	//Get token and sunpike kubeconfig for this cluster
-	/*ksToken, err := token.GetKsToken(projectID)
-	if err != nil {
-		return nil
-	}*/
-	ksToken := ""
+	ksToken := "abcd"
 	kubeCfg, err := token.GetSunpikeKubeCfg(ksToken, clusterID, projectID)
 	if err != nil {
 		log.Errorf("Unable to get kubeconfig for cluster: %s %s", clusterID, err)
@@ -172,28 +202,51 @@ func (w *Watcher) syncClusterAddons(clusterID, projectID string) error {
 	//In case of a diff is detected between status of local Addon object and
 	//ClusterAddon object: update status of ClusterAddon object
 	for _, addon := range mapAddon {
-		if spClsAddon, ok := mapClsAddon[addon.Name]; ok {
-			w.processAddon(kubeCfg, addon, spClsAddon)
+		spClsAddon, ok := mapClsAddon[addon.Name]
+		w.processAddon(kubeCfg, &addon, spClsAddon, ok)
+	}
+
+	return nil
+}
+
+func (w *Watcher) processAddon(kubeCfg *rest.Config, localAddon *agentv1.Addon, clsAddon v1alpha2.ClusterAddon, ok bool) error {
+
+	if ok {
+		if localAddon.Status.CurrentState == clsAddon.Status.CurrentState &&
+			localAddon.Status.Healthy == clsAddon.Status.Healthy {
+			log.Debugf("Not updating ClusterAddon status: %s", clsAddon.Name)
+			return nil
+		}
+
+		clsAddon.Status.CurrentState = localAddon.Status.CurrentState
+		clsAddon.Status.Healthy = localAddon.Status.Healthy
+
+		log.Infof("Updating ClusterAddon object: %s status with %s", clsAddon.Name, clsAddon.Status.CurrentState)
+		if err := w.updateSunpikeStatus(kubeCfg, &clsAddon); err != nil {
+			log.Errorf("Failed to update ClusterAddon status: %s %s", clsAddon.Name, err)
+		}
+	} else {
+		log.Infof("Creating ClusterAddon object: %s", localAddon.Name)
+		convClsAddon := convertToClsAddon(localAddon)
+		if err := w.createSunpikeAddon(kubeCfg, &convClsAddon); err != nil {
+			log.Errorf("Failed to create ClusterAddon: %s %s", convClsAddon.Name, err)
 		}
 	}
 
 	return nil
 }
 
-func (w *Watcher) processAddon(kubeCfg *rest.Config, localAddon agentv1.Addon, clsAddon v1alpha2.ClusterAddon) error {
-
-	if localAddon.Status.CurrentState == clsAddon.Status.CurrentState &&
-		localAddon.Status.Healthy == clsAddon.Status.Healthy {
-		log.Debugf("Not updating ClusterAddon status: %s", clsAddon.Name)
-		return nil
+func (w *Watcher) createSunpikeAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon) error {
+	// Create Sunpike client
+	sunpikeClient, err := clientset.NewForConfig(kubeCfg)
+	if err != nil {
+		return err
 	}
 
-	clsAddon.Status.CurrentState = localAddon.Status.CurrentState
-	clsAddon.Status.Healthy = localAddon.Status.Healthy
-
-	log.Infof("Updating ClusterAddon object: %s status with %s", clsAddon.Name, clsAddon.Status.CurrentState)
-	if err := w.updateSunpikeStatus(kubeCfg, &clsAddon); err != nil {
-		log.Errorf("Failed to update ClusterAddon status: %s %s", clsAddon.Name, err)
+	_, err = sunpikeClient.SunpikeV1alpha2().ClusterAddons().Create(w.ctx, clsAddon, metav1.CreateOptions{})
+	if err != nil {
+		log.Errorf("Failed to create ClusterAddon: %s %s", clsAddon.Name, err)
+		return err
 	}
 
 	return nil

@@ -27,11 +27,11 @@ import (
 type AddonSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	Version string `json:"version"`
-	Type    string `json:"type"`
-	Override Override `json:"override,omitempty"`
-	Watch    bool     `json:"watch,omitempty"`
+	ClusterID string   `json:"clusterID"`
+	Version   string   `json:"version"`
+	Type      string   `json:"type"`
+	Override  Override `json:"override,omitempty"`
+	Watch     bool     `json:"watch,omitempty"`
 }
 
 // Override defines params to override in the addon

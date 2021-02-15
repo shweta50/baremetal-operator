@@ -18,7 +18,7 @@ spec:
       serviceAccountName: pf9-addon-operator
       containers:
       - name: pf9-addon-operator
-        image: platform9/pf9-addon-operator:debug
+        image: platform9/pf9-addon-operator:1.0.0
         imagePullPolicy: IfNotPresent
         resources:
           limits:
@@ -27,8 +27,14 @@ spec:
         env:
         - name: LOGLEVEL
           value: "DEBUG"
-        - name: HEALTHCHECK_INTERVAL_MINS
-          value: "10"
+        - name: HEALTHCHECK_INTERVAL_SECS
+          value: "150"
+        - name: CLUSTER_ID
+          value: __CLUSTER_ID__
+        - name: PROJECT_ID
+          value: __PROJECT_ID__
+        - name: DU_FQDN
+          value: __DU_FQDN__
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
