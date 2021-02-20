@@ -1,7 +1,5 @@
 FROM alpine:3.11
 
-MAINTAINER support@platform9.com
-
 RUN apk add curl 
 
 COPY ./bin/manager /
@@ -9,4 +7,3 @@ COPY addon_templates /addon_templates
 COPY etc/addon /etc/addon
 RUN chmod +x /manager
 ENTRYPOINT ["/manager"]
-#CMD sh -c "sleep 1000000"

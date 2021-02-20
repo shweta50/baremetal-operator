@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -49,9 +50,10 @@ type Params struct {
 type AddonStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
-	CurrentState       string `json:"currentState,omitempty"`
-	Healthy            bool   `json:"healthy,omitempty"`
+	ObservedGeneration int64               `json:"observedGeneration,omitempty"`
+	Phase              v1alpha2.AddonPhase `json:"phase,omitempty"`
+	Message            string              `json:"message,omitempty"`
+	Healthy            bool                `json:"healthy,omitempty"`
 }
 
 // Addon is the Schema for the addons API

@@ -21,7 +21,7 @@ import (
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/controllers"
-	"github.com/platform9/pf9-addon-operator/pkg/k8s"
+	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	"github.com/platform9/pf9-addon-operator/pkg/token"
 	// +kubebuilder:scaffold:imports
 )
@@ -46,7 +46,6 @@ func main() {
 	flag.Parse()
 	log.SetFormatter(&log.JSONFormatter{})
 	setLogLevel()
-	//ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
@@ -56,7 +55,6 @@ func main() {
 		LeaderElectionID:   "75e2bf59.pf9.io",
 	})
 	if err != nil {
-		//setupLog.Error(err, "unable to start manager")
 		log.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
@@ -66,27 +64,30 @@ func main() {
 		Log:    ctrl.Log.WithName("controllers").WithName("Addon"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		//setupLog.Error(err, "unable to create controller", "controller", "Addon")
 		log.Error(err, "unable to create controller")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 	go healthCheck()
 
-	/*http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
-		api.AvailableAddons(w, req)
-	})
+	/*
+		TODO: These APIs will soon be required for listing addons available for install
+		and version upgrades available for each addon. The following is sample legacy code
+		which was added in the previous design.
 
-	http.HandleFunc("/v1/status", func(w http.ResponseWriter, req *http.Request) {
-		api.Status(w, req)
-	})
+		http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
+			api.AvailableAddons(w, req)
+		})
 
-	go http.ListenAndServe("0.0.0.0:8090", nil)*/
+		http.HandleFunc("/v1/status", func(w http.ResponseWriter, req *http.Request) {
+			api.Status(w, req)
+		})
 
-	//setupLog.Info("starting manager")
+		go http.ListenAndServe("0.0.0.0:8090", nil)
+	*/
+
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		//setupLog.Error(err, "problem running manager")
 		log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
@@ -121,7 +122,7 @@ func healthCheck() {
 	clusterID := getEnvUUID("CLUSTER_ID")
 	projectID := getEnvUUID("PROJECT_ID")
 
-	w, err := k8s.New("k8s", cl)
+	w, err := addons.New(cl)
 	if err != nil {
 		log.Error(err, "while processing package")
 		panic("Cannot create client")

@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	"fmt"
@@ -21,15 +21,15 @@ const (
 
 // DashboardClient represents the kube dashboard addon
 type DashboardClient struct {
-	c              client.Client
+	client         client.Client
 	overrideParams map[string]interface{}
 	version        string
 }
 
-func getKubeDashboard(c client.Client, version string, params map[string]interface{}) *DashboardClient {
+func newKubeDashboard(c client.Client, version string, params map[string]interface{}) *DashboardClient {
 
 	cl := &DashboardClient{
-		c:              c,
+		client:         c,
 		overrideParams: params,
 		version:        version,
 	}
@@ -45,13 +45,14 @@ func (c *DashboardClient) ValidateParams() (bool, error) {
 
 //Health checks health of the instance
 func (c *DashboardClient) Health() (bool, error) {
-	deployScraper, err := util.GetDeployment(dashboardNS, dashboardDeployScraper, c.c)
+	//return true, nil
+	deployScraper, err := util.GetDeployment(dashboardNS, dashboardDeployScraper, c.client)
 	if err != nil {
 		log.Errorf("Failed to get deployment: %s", err)
 		return false, err
 	}
 
-	deploy, err := util.GetDeployment(dashboardNS, dashboardDeploy, c.c)
+	deploy, err := util.GetDeployment(dashboardNS, dashboardDeploy, c.client)
 	if err != nil {
 		log.Errorf("Failed to get deployment: %s", err)
 		return false, err
@@ -91,7 +92,7 @@ func (c *DashboardClient) Install() error {
 		return err
 	}
 
-	err = util.ApplyYaml(outputFilePath, c.c)
+	err = util.ApplyYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to apply yaml file: %s", err)
 		return err
@@ -117,7 +118,7 @@ func (c *DashboardClient) Uninstall() error {
 		return err
 	}
 
-	err = util.DeleteYaml(outputFilePath, c.c)
+	err = util.DeleteYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to delete yaml file: %s", err)
 		return err
@@ -127,7 +128,8 @@ func (c *DashboardClient) Uninstall() error {
 }
 
 func (c *DashboardClient) preInstall() error {
-	sec, err := util.GetSecret(dashboardNS, dashboardSecret, c.c)
+	//return nil
+	sec, err := util.GetSecret(dashboardNS, dashboardSecret, c.client)
 	if err != nil {
 		log.Errorf("Failed to get secret: %s", err)
 		return err

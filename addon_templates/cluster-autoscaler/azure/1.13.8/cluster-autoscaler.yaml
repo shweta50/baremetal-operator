@@ -143,6 +143,7 @@ spec:
         app: cluster-autoscaler
     spec:
       serviceAccountName: cluster-autoscaler
+      priorityClassName: system-cluster-critical
       tolerations:
         - effect: NoSchedule
           operator: "Equal"
@@ -192,8 +193,8 @@ spec:
                   name: cluster-autoscaler-azure
           resources:
             limits:
-              cpu: 100m
-              memory: 300Mi
+              cpu: 200m
+              memory: 600Mi
             requests:
               cpu: 100m
               memory: 300Mi

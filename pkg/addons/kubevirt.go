@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	"path/filepath"
@@ -15,15 +15,15 @@ const (
 
 // KubeVirtClient represents implementation for interacting with plain K8s cluster
 type KubeVirtClient struct {
-	c              client.Client
+	client         client.Client
 	overrideParams map[string]interface{}
 	version        string
 }
 
-func getKubeVirt(c client.Client, version string, params map[string]interface{}) *KubeVirtClient {
+func newKubeVirt(c client.Client, version string, params map[string]interface{}) *KubeVirtClient {
 
 	cl := &KubeVirtClient{
-		c:              c,
+		client:         c,
 		overrideParams: params,
 		version:        version,
 	}
@@ -98,7 +98,7 @@ func (c *KubeVirtClient) install(inputFilePath, outputFilePath string) error {
 		return err
 	}
 
-	err = util.ApplyYaml(outputFilePath, c.c)
+	err = util.ApplyYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to apply yaml file: %s", err)
 		return err
@@ -115,7 +115,7 @@ func (c *KubeVirtClient) uninstall(inputFilePath, outputFilePath string) error {
 		return err
 	}
 
-	err = util.DeleteYaml(outputFilePath, c.c)
+	err = util.DeleteYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to delete yaml file: %s", err)
 		return err

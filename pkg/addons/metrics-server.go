@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	"path/filepath"
@@ -16,15 +16,15 @@ const (
 
 // MetricsServerClient represents implementation for interacting with plain K8s cluster
 type MetricsServerClient struct {
-	c              client.Client
+	client         client.Client
 	overrideParams map[string]interface{}
 	version        string
 }
 
-func getMetricsServer(c client.Client, version string, params map[string]interface{}) *MetricsServerClient {
+func newMetricsServer(c client.Client, version string, params map[string]interface{}) *MetricsServerClient {
 
 	cl := &MetricsServerClient{
-		c:              c,
+		client:         c,
 		overrideParams: params,
 		version:        version,
 	}
@@ -40,8 +40,8 @@ func (c *MetricsServerClient) ValidateParams() (bool, error) {
 
 //Health checks health of the instance
 func (c *MetricsServerClient) Health() (bool, error) {
-
-	deploy, err := util.GetDeployment(metricsServerNS, metricsServerDeploy, c.c)
+	//return true, nil
+	deploy, err := util.GetDeployment(metricsServerNS, metricsServerDeploy, c.client)
 	if err != nil {
 		log.Errorf("Failed to get deploy: %s", err)
 		return false, err
@@ -76,7 +76,7 @@ func (c *MetricsServerClient) Install() error {
 		return err
 	}
 
-	err = util.ApplyYaml(outputFilePath, c.c)
+	err = util.ApplyYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to apply yaml file: %s", err)
 		return err
@@ -101,7 +101,7 @@ func (c *MetricsServerClient) Uninstall() error {
 		return err
 	}
 
-	err = util.DeleteYaml(outputFilePath, c.c)
+	err = util.DeleteYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to delete yaml file: %s", err)
 		return err

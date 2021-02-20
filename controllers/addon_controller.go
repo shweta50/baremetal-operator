@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
+	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
-	"github.com/platform9/pf9-addon-operator/pkg/k8s"
 )
 
 // AddonReconciler reconciles a Addon object
@@ -55,7 +55,7 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	operation := getOperation(&addon)
 
-	w, err := k8s.New("k8s", r.Client)
+	w, err := addons.New(r.Client)
 	if err != nil {
 		log.Error(err, "while processing package")
 		return ctrl.Result{}, err
