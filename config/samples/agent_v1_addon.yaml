@@ -1,0 +1,18 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: addon-sample
+spec:
+  name: "first-operator"
+  version: "0.2.0"
+  namespace: "pf9-addons"
+  operation: "install"
+  healthcheck:
+   deployments: 
+   - ns: "pf9-addons"
+     name: "nginx-deployment"
+   - ns: "kube-system"
+     name: "coredns"
+   url:
+   - link: "svc.cluster.io"
+     retcode: 200

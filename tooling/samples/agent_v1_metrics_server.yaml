@@ -1,0 +1,8 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: metrics-server
+spec:
+  type: "metrics-server"
+  version: "0.3.6"
+  watch: true

@@ -1,0 +1,8 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: kube-dashboard
+spec:
+  version: 2.0.3
+  type: "kubernetes-dashboard"
+  watch: true
