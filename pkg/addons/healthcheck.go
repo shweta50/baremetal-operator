@@ -38,6 +38,7 @@ import (
 
 const (
 	sunpikeClusterLabel = "sunpike.pf9.io/cluster"
+	sunpikeNs           = "default"
 )
 
 func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectID string) (map[string]v1alpha2.ClusterAddon, error) {
@@ -55,7 +56,7 @@ func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectI
 	listOptions := metav1.ListOptions{
 		LabelSelector: sunpikeClusterLabel + "=" + clusterID,
 	}
-	clsAddonList, err := sunpikeClient.SunpikeV1alpha2().ClusterAddons().List(w.ctx, listOptions)
+	clsAddonList, err := sunpikeClient.SunpikeV1alpha2().ClusterAddons(sunpikeNs).List(w.ctx, listOptions)
 	if err != nil {
 		log.Error(err, "Unable to list ClusterAddons")
 		return mapClsAddon, err
@@ -100,7 +101,7 @@ func convertToClsAddon(addon *agentv1.Addon) v1alpha2.ClusterAddon {
 
 	clsAddon := v1alpha2.ClusterAddon{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "pf9-addons",
+			Namespace: "default",
 			Name:      addon.Name,
 			Labels: map[string]string{
 				sunpikeClusterLabel: addon.Spec.ClusterID,
@@ -179,7 +180,12 @@ func (w *Watcher) HealthCheck(clusterID, projectID string) error {
 //sync the state of ClusterAddon objects on sunpike with local Addon objects
 func (w *Watcher) syncClusterAddons(clusterID, projectID string) error {
 
-	ksToken := "abcd"
+	ksToken, err := token.GetSunpikeToken()
+	if err != nil {
+		log.Errorf("Failed to generate token: %s", err)
+		return err
+	}
+
 	kubeCfg, err := token.GetSunpikeKubeCfg(ksToken, clusterID, projectID)
 	if err != nil {
 		log.Errorf("Unable to get kubeconfig for cluster: %s %s", clusterID, err)
@@ -254,7 +260,7 @@ func (w *Watcher) createSunpikeAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.Cl
 		return err
 	}
 
-	_, err = sunpikeClient.SunpikeV1alpha2().ClusterAddons().Create(w.ctx, clsAddon, metav1.CreateOptions{})
+	_, err = sunpikeClient.SunpikeV1alpha2().ClusterAddons(sunpikeNs).Create(w.ctx, clsAddon, metav1.CreateOptions{})
 	if err != nil {
 		log.Errorf("Failed to create ClusterAddon: %s %s", clsAddon.Name, err)
 		return err
@@ -270,7 +276,7 @@ func (w *Watcher) updateSunpikeStatus(kubeCfg *rest.Config, clsAddon *v1alpha2.C
 		return err
 	}
 
-	_, err = sunpikeClient.SunpikeV1alpha2().ClusterAddons().Update(w.ctx, clsAddon, metav1.UpdateOptions{})
+	_, err = sunpikeClient.SunpikeV1alpha2().ClusterAddons(sunpikeNs).Update(w.ctx, clsAddon, metav1.UpdateOptions{})
 	if err != nil {
 		log.Errorf("Failed to update cluster addon status: %s %s", clsAddon.Name, err)
 		return err
