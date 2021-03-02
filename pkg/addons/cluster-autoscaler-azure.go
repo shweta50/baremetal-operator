@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	"path/filepath"
@@ -15,17 +15,17 @@ const (
 	casAzureDeploy = "cluster-autoscaler"
 )
 
-// CAutoScalerAzureClient represents implementation for interacting with plain K8s cluster
-type CAutoScalerAzureClient struct {
-	c              client.Client
+// AutoScalerAzureClient represents implementation for interacting with plain K8s cluster
+type AutoScalerAzureClient struct {
+	client         client.Client
 	overrideParams map[string]interface{}
 	version        string
 }
 
-func getCAutoScalerAzure(c client.Client, version string, params map[string]interface{}) *CAutoScalerAzureClient {
+func newAutoScalerAzure(c client.Client, version string, params map[string]interface{}) *AutoScalerAzureClient {
 
-	cl := &CAutoScalerAzureClient{
-		c:              c,
+	cl := &AutoScalerAzureClient{
+		client:         c,
 		overrideParams: params,
 		version:        version,
 	}
@@ -34,7 +34,7 @@ func getCAutoScalerAzure(c client.Client, version string, params map[string]inte
 }
 
 //ValidateParams validates params of an addon
-func (c *CAutoScalerAzureClient) ValidateParams() (bool, error) {
+func (c *AutoScalerAzureClient) ValidateParams() (bool, error) {
 	if _, ok := c.overrideParams["clientID"]; !ok {
 		return false, addonerr.InvalidParams("clientID")
 	}
@@ -67,8 +67,8 @@ func (c *CAutoScalerAzureClient) ValidateParams() (bool, error) {
 }
 
 //Health checks health of the instance
-func (c *CAutoScalerAzureClient) Health() (bool, error) {
-	deploy, err := util.GetDeployment(casAzureNS, casAzureDeploy, c.c)
+func (c *AutoScalerAzureClient) Health() (bool, error) {
+	deploy, err := util.GetDeployment(casAzureNS, casAzureDeploy, c.client)
 	if err != nil {
 		log.Errorf("Failed to get deployment: %s", err)
 		return false, err
@@ -82,12 +82,12 @@ func (c *CAutoScalerAzureClient) Health() (bool, error) {
 }
 
 //Upgrade upgrades an CAutoScalerAzure instance
-func (c *CAutoScalerAzureClient) Upgrade() error {
+func (c *AutoScalerAzureClient) Upgrade() error {
 	return c.Install()
 }
 
 //Install installs an CAutoScalerAzure instance
-func (c *CAutoScalerAzureClient) Install() error {
+func (c *AutoScalerAzureClient) Install() error {
 
 	inputPath, outputPath, err := util.EnsureDirStructure(casAzureDir, c.version)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *CAutoScalerAzureClient) Install() error {
 		return err
 	}
 
-	err = util.ApplyYaml(outputFilePath, c.c)
+	err = util.ApplyYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to apply yaml file: %s", err)
 		return err
@@ -113,7 +113,7 @@ func (c *CAutoScalerAzureClient) Install() error {
 }
 
 //Uninstall removes an CAutoScalerAzure instance
-func (c *CAutoScalerAzureClient) Uninstall() error {
+func (c *AutoScalerAzureClient) Uninstall() error {
 
 	inputPath, outputPath, err := util.EnsureDirStructure(casAzureDir, c.version)
 	if err != nil {
@@ -129,7 +129,7 @@ func (c *CAutoScalerAzureClient) Uninstall() error {
 		return err
 	}
 
-	err = util.DeleteYaml(outputFilePath, c.c)
+	err = util.DeleteYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to delete yaml file: %s", err)
 		return err

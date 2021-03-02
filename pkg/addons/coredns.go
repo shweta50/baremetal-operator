@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	"path/filepath"
@@ -19,15 +19,15 @@ const (
 
 // CoreDNSClient represents implementation for interacting with plain K8s cluster
 type CoreDNSClient struct {
-	c              client.Client
+	client         client.Client
 	overrideParams map[string]interface{}
 	version        string
 }
 
-func getCoreDNS(c client.Client, version string, params map[string]interface{}) *CoreDNSClient {
+func newCoreDNS(c client.Client, version string, params map[string]interface{}) *CoreDNSClient {
 
 	cl := &CoreDNSClient{
-		c:              c,
+		client:         c,
 		overrideParams: params,
 		version:        version,
 	}
@@ -66,8 +66,8 @@ func (c *CoreDNSClient) ValidateParams() (bool, error) {
 
 //Health checks health of the instance
 func (c *CoreDNSClient) Health() (bool, error) {
-
-	d, err := util.GetDeployment(corednsNS, corednsDeploy, c.c)
+	//return true, nil
+	d, err := util.GetDeployment(corednsNS, corednsDeploy, c.client)
 	if err != nil {
 		log.Errorf("Failed to get rc: %s", err)
 		return false, err
@@ -101,7 +101,7 @@ func (c *CoreDNSClient) Install() error {
 		return err
 	}
 
-	err = util.ApplyYaml(outputFilePath, c.c)
+	err = util.ApplyYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to apply yaml file: %s", err)
 		return err
@@ -127,7 +127,7 @@ func (c *CoreDNSClient) Uninstall() error {
 		return err
 	}
 
-	err = util.DeleteYaml(outputFilePath, c.c)
+	err = util.DeleteYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to delete yaml file: %s", err)
 		return err

@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	// IP Indicates invalid parameters specified
-	IP = 1
-	// NA indicates not authorized
-	NA = 4
+	// ErrInvalidParameters indicates invalid parameters specified
+	ErrInvalidParameters = 1
+	// ErrUnauthorized indicates not authorized
+	ErrUnauthorized = 4
 )
 
 // AddonError represents application errors for Addon
@@ -18,7 +18,7 @@ type AddonError struct {
 	Code    int
 	Reason  string
 	Requeue bool
-	//RequeueAfter int
+	//TODO: try out requeue later RequeueAfter int
 }
 
 func (e AddonError) Error() string {
@@ -37,7 +37,7 @@ func IsAddonError(e error) (AddonError, bool) {
 // InvalidParams returns error of type Invalid params
 func InvalidParams(msg string) AddonError {
 	return AddonError{
-		Code:    IP,
+		Code:    ErrInvalidParameters,
 		Reason:  fmt.Sprintf("Required parameter %s missing", msg),
 		Requeue: false,
 	}
@@ -46,7 +46,7 @@ func InvalidParams(msg string) AddonError {
 // IsInvalidParams checks if error is of type InvalidParams
 func IsInvalidParams(e error) bool {
 	ae, ok := e.(AddonError)
-	if ok && ae.Code == IP {
+	if ok && ae.Code == ErrInvalidParameters {
 		return true
 	}
 
@@ -56,7 +56,7 @@ func IsInvalidParams(e error) bool {
 // NotAuthorized is thrown when user is not authorized to make an API call
 func NotAuthorized() AddonError {
 	return AddonError{
-		Code:   NA,
+		Code:   ErrUnauthorized,
 		Reason: fmt.Sprintf("Not authorized"),
 	}
 }
@@ -64,7 +64,7 @@ func NotAuthorized() AddonError {
 // IsNotAuthorized checks if error is of type NotAuthorized
 func IsNotAuthorized(e error) bool {
 	ae, ok := e.(AddonError)
-	if ok && ae.Code == NA {
+	if ok && ae.Code == ErrUnauthorized {
 		return true
 	}
 
@@ -82,6 +82,8 @@ func ProcessError(e error) (ctrl.Result, error) {
 	if ae.Requeue {
 		return ctrl.Result{
 			Requeue: ae.Requeue,
+			//TODO check if we can have retry using this
+			//right now this does not work
 			//RequeueAfter: time.Duration(ae.RequeueAfter) * time.Second,
 		}, e
 	}

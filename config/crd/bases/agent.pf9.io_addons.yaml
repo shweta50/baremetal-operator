@@ -71,16 +71,19 @@ spec:
         status:
           description: AddonStatus defines the observed state of Addon
           properties:
-            currentState:
-              type: string
             healthy:
               type: boolean
+            message:
+              type: string
             observedGeneration:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "make" to regenerate code after modifying
                 this file'
               format: int64
               type: integer
+            phase:
+              description: AddonPhase is a label for the status of a addon.
+              type: string
           type: object
       type: object
   version: v1

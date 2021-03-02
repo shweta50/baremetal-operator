@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -20,19 +20,19 @@ func getAddonClient(mode, version string, params map[string]interface{}, c clien
 
 	switch mode {
 	case "coredns":
-		instance = getCoreDNS(c, version, params)
+		instance = newCoreDNS(c, version, params)
 	case "metallb":
-		instance = getMetalLB(c, version, params)
+		instance = newMetalLB(c, version, params)
 	case "kubernetes-dashboard":
-		instance = getKubeDashboard(c, version, params)
+		instance = newKubeDashboard(c, version, params)
 	case "metrics-server":
-		instance = getMetricsServer(c, version, params)
+		instance = newMetricsServer(c, version, params)
 	case "cluster-auto-scaler-aws":
-		instance = getCAutoScalerAws(c, version, params)
+		instance = newAutoScalerAws(c, version, params)
 	case "cluster-auto-scaler-azure":
-		instance = getCAutoScalerAzure(c, version, params)
+		instance = newAutoScalerAzure(c, version, params)
 	case "kubevirt":
-		instance = getKubeVirt(c, version, params)
+		instance = newKubeVirt(c, version, params)
 
 	default:
 		log.Panicf("Mode %s is not supported", mode)

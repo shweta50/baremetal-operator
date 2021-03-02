@@ -241,8 +241,7 @@ spec:
         - --tls-cert-file=dashboard.crt
         - --tls-key-file=dashboard.key
         - --namespace=kubernetes-dashboard
-        image: kubernetesui/dashboard:v2.0.0
-        imagePullPolicy: Always
+        image: kubernetesui/dashboard:v2.0.1
         livenessProbe:
           httpGet:
             path: /
@@ -276,5 +275,4 @@ spec:
       - name: kubernetes-dashboard-certs
         secret:
           secretName: kubernetes-dashboard-certs
-      - emptyDir: {}
-        name: tmp-volume
+      - name: tmp-volume

@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 /*
  *      Copyright 2020 Platform9, Inc.
@@ -165,7 +165,7 @@ func (w *Watcher) InstallPkg(addon *agentv1.Addon) error {
 		return err
 	}
 
-	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.cl)
+	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.client)
 
 	if ok, err := addonClient.ValidateParams(); !ok {
 		log.Errorf("Error validating addon params: %s", err)
@@ -192,7 +192,7 @@ func (w *Watcher) UninstallPkg(addon *agentv1.Addon) error {
 		return err
 	}
 
-	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.cl)
+	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.client)
 
 	if err := addonClient.Uninstall(); err != nil {
 		log.Errorf("Error installing addon: %s", err)
@@ -214,7 +214,7 @@ func (w *Watcher) UpgradePkg(addon *agentv1.Addon) error {
 		return err
 	}
 
-	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.cl)
+	addonClient := getAddonClient(addon.Spec.Type, addon.Spec.Version, params, w.client)
 
 	if err := addonClient.Upgrade(); err != nil {
 		log.Errorf("Error upgrading addon: %s", err)
@@ -257,7 +257,7 @@ func (w *Watcher) installPkg(text string, addon *agentv1.Addon) error {
 
 	for _, obj := range resourceList {
 		log.Infof("Creating %s name: %s", obj.GetKind(), obj.GetName())
-		err := apply.ApplyObject(context.Background(), w.cl, obj)
+		err := apply.ApplyObject(context.Background(), w.client, obj)
 		if err != nil {
 			log.Error(err, "Error applying unstructured object")
 			return err
@@ -266,59 +266,3 @@ func (w *Watcher) installPkg(text string, addon *agentv1.Addon) error {
 
 	return nil
 }
-
-/*func (w *Watcher) uninstallPkg(kdir string, addon *agentv1.Addon) error {
-	pkgname := addon.Name
-
-	patchFile := kdir + "/patch.yaml"
-	exist := doesFileExist(patchFile)
-	if exist {
-		b, err := ioutil.ReadFile(patchFile)
-		if err != nil {
-			log.Error("Failed to read patch file", err)
-			return err
-		}
-
-		patchStr := string(b)
-		for _, p := range addon.Spec.Override.Params {
-			log.Debugf("Params: %s  %s", p.Name, p.Value)
-			r, _ := regexp.Compile(p.Name)
-			patchStr = r.ReplaceAllString(patchStr, p.Value)
-		}
-
-		if err := ioutil.WriteFile(patchFile, []byte(patchStr), 0644); err != nil {
-			log.Errorf("Failed to read patch file: %s %s", patchFile, err)
-			return err
-		}
-	}
-
-	if err := buildPkg(kdir); err != nil {
-		log.Error("Failed to build kustomize pkg", err)
-		return err
-	}
-
-	cmd := exec.Command(getKubeCmd(), "delete", "-f", kdir+"/output.yaml")
-	cmd.Env = append(os.Environ(), fmt.Sprintf("KUBECONFIG=%s", kubeConfig))
-
-	var errb, outb bytes.Buffer
-	cmd.Stderr = &errb
-	cmd.Stdout = &outb
-
-	cmd.Start()
-
-	if err := cmd.Wait(); err != nil {
-		output := errb.String() + outb.String()
-		log.Errorf("Error installing kustomize pkg %s , output: %s", pkgname, output)
-		return fmt.Errorf("%s", output)
-	}
-
-	return nil
-}
-
-func doesFileExist(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
-}*/

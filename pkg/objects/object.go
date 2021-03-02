@@ -13,8 +13,8 @@ const (
 
 //AddonState lists of Addons on the cluster
 type AddonState struct {
-	Name         string `json:"name,omitempty"`
-	Version      string `json:"version"`
-	Type         string `json:"type"`
-	CurrentState string `json:"current_state,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version"`
+	Type    string `json:"type"`
+	Phase   string `json:"phase,omitempty"`
 }

@@ -1,4 +1,4 @@
-package k8s
+package addons
 
 import (
 	"path/filepath"
@@ -21,15 +21,15 @@ const (
 
 // MetallbClient represents implementation for interacting with plain K8s cluster
 type MetallbClient struct {
-	c              client.Client
+	client         client.Client
 	overrideParams map[string]interface{}
 	version        string
 }
 
-func getMetalLB(c client.Client, version string, params map[string]interface{}) *MetallbClient {
+func newMetalLB(c client.Client, version string, params map[string]interface{}) *MetallbClient {
 
 	cl := &MetallbClient{
-		c:              c,
+		client:         c,
 		overrideParams: params,
 		version:        version,
 	}
@@ -47,19 +47,20 @@ func (c *MetallbClient) ValidateParams() (bool, error) {
 
 //Health checks health of the instance
 func (c *MetallbClient) Health() (bool, error) {
-	daemonset, err := util.GetDaemonset(metallbNS, metallbDaemonset, c.c)
+	daemonset, err := util.GetDaemonset(metallbNS, metallbDaemonset, c.client)
 	if err != nil {
 		log.Errorf("Failed to get daemonset: %s", err)
 		return false, err
 	}
 
-	deploy, err := util.GetDeployment(metallbNS, metallbDeploy, c.c)
+	deploy, err := util.GetDeployment(metallbNS, metallbDeploy, c.client)
 	if err != nil {
 		log.Errorf("Failed to get daemonset: %s", err)
 		return false, err
 	}
 
-	if daemonset.Status.NumberReady > 0 && deploy.Status.ReadyReplicas > 0 {
+	if deploy.Status.ReadyReplicas > 0 &&
+		daemonset.Status.NumberReady == daemonset.Status.DesiredNumberScheduled {
 		return true, nil
 	}
 
@@ -88,7 +89,7 @@ func (c *MetallbClient) Install() error {
 		return err
 	}
 
-	err = util.ApplyYaml(outputFilePath, c.c)
+	err = util.ApplyYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to apply yaml file: %s", err)
 		return err
@@ -119,7 +120,7 @@ func (c *MetallbClient) Uninstall() error {
 		return err
 	}
 
-	err = util.DeleteYaml(outputFilePath, c.c)
+	err = util.DeleteYaml(outputFilePath, c.client)
 	if err != nil {
 		log.Errorf("Failed to delete yaml file: %s", err)
 		return err
@@ -129,7 +130,7 @@ func (c *MetallbClient) Uninstall() error {
 }
 
 func (c *MetallbClient) postInstall() error {
-	sec, err := util.GetSecret(metallbNS, metallbSecret, c.c)
+	sec, err := util.GetSecret(metallbNS, metallbSecret, c.client)
 	if err != nil {
 		log.Errorf("Failed to get secret: %s", err)
 		return err
@@ -144,7 +145,7 @@ func (c *MetallbClient) postInstall() error {
 			return err
 		}
 
-		err = util.CreateSecret(metallbNS, metallbSecret, metallbSecretKey, val, c.c)
+		err = util.CreateSecret(metallbNS, metallbSecret, metallbSecretKey, val, c.client)
 		if err != nil {
 			log.Errorf("Failed to get secret: %s", err)
 			return err

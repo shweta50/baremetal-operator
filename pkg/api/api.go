@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
-	"github.com/platform9/pf9-addon-operator/pkg/k8s"
+	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	"github.com/platform9/pf9-addon-operator/pkg/objects"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
@@ -30,7 +30,7 @@ func Status(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w, err := k8s.New("k8s", cl)
+	w, err := addons.New(cl)
 	if err != nil {
 		resp.WriteHeader(http.StatusInternalServerError)
 		log.Error(err, "while processing package")

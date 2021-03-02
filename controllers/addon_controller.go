@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
+	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
-	"github.com/platform9/pf9-addon-operator/pkg/k8s"
 )
 
 // AddonReconciler reconciles a Addon object
@@ -55,7 +55,7 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	operation := getOperation(&addon)
 
-	w, err := k8s.New("k8s", r.Client)
+	w, err := addons.New(r.Client)
 	if err != nil {
 		log.Error(err, "while processing package")
 		return ctrl.Result{}, err
@@ -105,7 +105,7 @@ func (r *AddonReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func setFinalizer(addon *agentv1.Addon, operation string) {
 	switch operation {
 	case "install":
-		addon.ObjectMeta.Finalizers = []string{"addons.finalizer.pf9.io"}
+		addon.ObjectMeta.Finalizers = []string{"addons.pf9.io"}
 	case "uninstall":
 		addon.ObjectMeta.Finalizers = []string{}
 	}
@@ -117,13 +117,13 @@ func getOperation(addon *agentv1.Addon) string {
 
 	if addon.ObjectMeta.DeletionTimestamp.IsZero() {
 		operation = "install"
-		log.Infof("Installing ClusterAddon: %s finalizers: %d", addon.Name, finalizers)
+		log.Infof("Installing Addon: %s finalizers: %d", addon.Name, finalizers)
 	} else {
 		operation = "uninstall"
 		if finalizers >= 0 {
-			log.Infof("Uninstalling ClusterAddons: %s", addon.Name)
+			log.Infof("Uninstalling Addons: %s", addon.Name)
 		} else {
-			log.Infof("Uninstalling ClusterAddons: %s no Finalizers found", addon.Name)
+			log.Infof("Uninstalling Addons: %s no Finalizers found", addon.Name)
 		}
 	}
 

@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
@@ -18,6 +20,11 @@ const (
 )
 
 var duFqdn = getEnvDUFQDN()
+
+type JWTClaims struct {
+	Foo string `json:"foo"`
+	jwt.StandardClaims
+}
 
 //IsValidUUID check is the passed string is a valid UUID
 func IsValidUUID(u string) bool {
@@ -60,4 +67,20 @@ func GetSunpikeKubeCfg(token, clusterID, project string) (*rest.Config, error) {
 	}
 
 	return cfg, err
+}
+
+//GetSunpikeToken gets a token to reach sunpike through qbert v5
+func GetSunpikeToken() (string, error) {
+	key := []byte("901C6739B76A4320B7C06578AF469F5A")
+	// Create the Claims
+	claims := JWTClaims{
+		"2415D3FD3AE2",
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Issuer:    "addon",
+		},
+	}
+
+	encToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return encToken.SignedString(key)
 }
