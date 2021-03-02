@@ -59,7 +59,8 @@ func (c *MetallbClient) Health() (bool, error) {
 		return false, err
 	}
 
-	if daemonset.Status.NumberReady > 0 && deploy.Status.ReadyReplicas > 0 {
+	if deploy.Status.ReadyReplicas > 0 &&
+		daemonset.Status.NumberReady == daemonset.Status.DesiredNumberScheduled {
 		return true, nil
 	}
 

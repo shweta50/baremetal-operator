@@ -41,6 +41,12 @@ const (
 	sunpikeNs           = "default"
 )
 
+var obsClusterAddons map[string]bool
+
+func init() {
+	obsClusterAddons = make(map[string]bool, 10)
+}
+
 func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectID string) (map[string]v1alpha2.ClusterAddon, error) {
 
 	//Get all ClusterAddon objects from sunpike and store in a map
@@ -212,6 +218,7 @@ func (w *Watcher) syncClusterAddons(clusterID, projectID string) error {
 	for _, clsAddon := range mapClsAddon {
 		localAddon, ok := mapAddon[clsAddon.Name]
 		w.processClusterAddon(kubeCfg, &clsAddon, &localAddon, ok)
+		obsClusterAddons[clsAddon.Name] = true
 	}
 
 	//In case of a diff is detected between status of local Addon object and
@@ -243,11 +250,18 @@ func (w *Watcher) processLocalAddon(kubeCfg *rest.Config, localAddon *agentv1.Ad
 			log.Errorf("Failed to update ClusterAddon status: %s %s", clsAddon.Name, err)
 		}
 	} else {
+		if _, ok := obsClusterAddons[localAddon.Name]; ok {
+			log.Infof("Already seen ClusterAddon object: %s, not creating", localAddon.Name)
+			return nil
+		}
+
 		log.Infof("Creating ClusterAddon object: %s", localAddon.Name)
 		convClsAddon := convertToClsAddon(localAddon)
 		if err := w.createSunpikeAddon(kubeCfg, &convClsAddon); err != nil {
 			log.Errorf("Failed to create ClusterAddon: %s %s", convClsAddon.Name, err)
 		}
+
+		obsClusterAddons[localAddon.Name] = true
 	}
 
 	return nil
@@ -292,8 +306,17 @@ func (w *Watcher) processClusterAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.C
 	//Check if ClusterAddon is being deleted
 	if !clsAddon.ObjectMeta.DeletionTimestamp.IsZero() {
 		if localAddonFound {
-			log.Infof("Deleting local Addon object: %s", clsAddon.Name)
+			//Set ClusterAddon phase to Uninstalling
+			clsAddon.Status.Phase = v1alpha2.AddonPhaseUnInstalling
+			clsAddon.Status.Healthy = false
+			clsAddon.Status.Message = ""
+			log.Infof("Updating ClusterAddon object: %s status with %s", clsAddon.Name, clsAddon.Status.Phase)
+			if err := w.updateSunpikeStatus(kubeCfg, clsAddon); err != nil {
+				log.Errorf("Failed to update sunpike status for deleted addon: %s %s", clsAddon.Name, err)
+			}
+
 			//Delete local Addon object
+			log.Infof("Deleting local Addon object: %s", clsAddon.Name)
 			err := w.client.Delete(w.ctx, &convAddon)
 			if err != nil {
 				log.Errorf("Failed to delete local addon: %s %s", clsAddon.Name, err)
@@ -319,6 +342,15 @@ func (w *Watcher) processClusterAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.C
 
 	//Check if we need to create Addon for newly created ClusterAddon
 	if !localAddonFound {
+		//Set ClusterAddon phase to Uninstalling
+		clsAddon.Status.Phase = v1alpha2.AddonPhaseInstalling
+		clsAddon.Status.Healthy = false
+		clsAddon.Status.Message = ""
+		log.Infof("Updating ClusterAddon object: %s status with %s", clsAddon.Name, clsAddon.Status.Phase)
+		if err := w.updateSunpikeStatus(kubeCfg, clsAddon); err != nil {
+			log.Errorf("Failed to update sunpike status for addon: %s %s", clsAddon.Name, err)
+		}
+
 		//Create Addon object
 		log.Infof("Creating Addon object: %s", clsAddon.Name)
 		err := w.client.Create(w.ctx, &convAddon)
