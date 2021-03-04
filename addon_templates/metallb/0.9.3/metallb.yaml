@@ -16,7 +16,7 @@ data:
     - name: default
       protocol: layer2
       addresses:
-      - {{ .MetallbIpRange }}
+{{ .MetallbIpRange }}
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
