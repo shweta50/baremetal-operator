@@ -7,15 +7,6 @@ rules:
 - apiGroups: ["*"]
   resources: ["*"]
   verbs: ["*"]
-- apiGroups: ["*"]
-  resources: ["namespaces"]
-  verbs: ["get", "list", "watch", "create"]
-- apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["get", "list"]
-- apiGroups: ["addons.pf9.io"]
-  resources: ["addons", "addons/status"]
-  verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
