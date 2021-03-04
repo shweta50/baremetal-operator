@@ -16,6 +16,7 @@ spec:
         app: pf9-addon-operator
     spec:
       serviceAccountName: pf9-addon-operator
+      hostNetwork: true
       containers:
       - name: pf9-addon-operator
         image: platform9/pf9-addon-operator:1.0.0
@@ -26,9 +27,9 @@ spec:
             cpu: "500m"
         env:
         - name: LOGLEVEL
-          value: "DEBUG"
+          value: "INFO"
         - name: HEALTHCHECK_INTERVAL_SECS
-          value: "150"
+          value: "90"
         - name: CLUSTER_ID
           value: __CLUSTER_ID__
         - name: PROJECT_ID

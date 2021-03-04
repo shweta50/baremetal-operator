@@ -102,6 +102,7 @@ deploy: manifests
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	cp config/crd/bases/agent.pf9.io_addons.yaml tooling/manifests/pf9-addon-operator/pf9-addon-operator-crd.yaml
 
 # Run go fmt against code
 fmt:

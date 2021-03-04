@@ -1,7 +1,9 @@
 package addons
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,6 +85,12 @@ func (c *MetallbClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "metallb.yaml")
 	outputFilePath := filepath.Join(outputPath, "metallb.yaml")
 
+	err = c.preInstall()
+	if err != nil {
+		log.Errorf("Failed to process pre install for metallb: %s", err)
+		return err
+	}
+
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
@@ -153,6 +161,30 @@ func (c *MetallbClient) postInstall() error {
 	} else {
 		log.Info("Secret member list already exists")
 	}
+
+	return nil
+}
+
+func (c *MetallbClient) preInstall() error {
+
+	metallbIPRange, ok := c.overrideParams["MetallbIpRange"]
+	if !ok {
+		return fmt.Errorf("Parameter MetallbIpRange not found")
+	}
+
+	metallbIPRangeStr := fmt.Sprintf("%s", metallbIPRange)
+
+	metallbIPRangeOutput := ""
+	ipRanges := strings.Split(metallbIPRangeStr, ",")
+	for _, ipRange := range ipRanges {
+		if len(strings.TrimSpace(ipRange)) == 0 {
+			continue
+		}
+
+		metallbIPRangeOutput = metallbIPRangeOutput + fmt.Sprintf("      - %s\n", strings.TrimSpace(ipRange))
+	}
+
+	c.overrideParams["MetallbIpRange"] = metallbIPRangeOutput
 
 	return nil
 }
