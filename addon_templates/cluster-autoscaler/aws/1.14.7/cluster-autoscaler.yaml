@@ -155,11 +155,11 @@ spec:
           name: cluster-autoscaler
           resources:
             limits:
-              cpu: 200m
-              memory: 600Mi
+              cpu: {{ .cpuLimit }}
+              memory: {{ .memLimit }}
             requests:
-              cpu: 100m
-              memory: 300Mi
+              cpu: {{ .cpuRequest }}
+              memory: {{ .memRequest }}
           command:
             - ./cluster-autoscaler
             - --v=4

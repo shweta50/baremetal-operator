@@ -35,12 +35,13 @@ func newAutoScalerAws(c client.Client, version string, params map[string]interfa
 
 //ValidateParams validates params of an addon
 func (c *AutoScalerAwsClient) ValidateParams() (bool, error) {
-	if _, ok := c.overrideParams["clusterUUID"]; !ok {
-		return false, addonerr.InvalidParams("clusterUUID")
-	}
 
-	if _, ok := c.overrideParams["clusterRegion"]; !ok {
-		return false, addonerr.InvalidParams("clusterRegion")
+	params := []string{"clusterUUID", "clusterRegion", "cpuLimit", "memLimit", "cpuRequest", "memRequest"}
+
+	for _, p := range params {
+		if _, ok := c.overrideParams[p]; !ok {
+			return false, addonerr.InvalidParams(p)
+		}
 	}
 
 	return true, nil

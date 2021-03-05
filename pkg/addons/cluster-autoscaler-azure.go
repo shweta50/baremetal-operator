@@ -35,32 +35,12 @@ func newAutoScalerAzure(c client.Client, version string, params map[string]inter
 
 //ValidateParams validates params of an addon
 func (c *AutoScalerAzureClient) ValidateParams() (bool, error) {
-	if _, ok := c.overrideParams["clientID"]; !ok {
-		return false, addonerr.InvalidParams("clientID")
-	}
+	params := []string{"clientID", "clientSecret", "resourceGroup", "subscriptionID", "tenantID", "minNumWorkers", "maxNumWorkers"}
 
-	if _, ok := c.overrideParams["clientSecret"]; !ok {
-		return false, addonerr.InvalidParams("clientSecret")
-	}
-
-	if _, ok := c.overrideParams["resourceGroup"]; !ok {
-		return false, addonerr.InvalidParams("resourceGroup")
-	}
-
-	if _, ok := c.overrideParams["subscriptionID"]; !ok {
-		return false, addonerr.InvalidParams("subscriptionID")
-	}
-
-	if _, ok := c.overrideParams["tenantID"]; !ok {
-		return false, addonerr.InvalidParams("tenantID")
-	}
-
-	if _, ok := c.overrideParams["minNumWorkers"]; !ok {
-		return false, addonerr.InvalidParams("minNumWorkers")
-	}
-
-	if _, ok := c.overrideParams["maxNumWorkers"]; !ok {
-		return false, addonerr.InvalidParams("maxNumWorkers")
+	for _, p := range params {
+		if _, ok := c.overrideParams[p]; !ok {
+			return false, addonerr.InvalidParams(p)
+		}
 	}
 
 	return true, nil
