@@ -38,16 +38,12 @@ func newCoreDNS(c client.Client, version string, params map[string]interface{}) 
 //ValidateParams validates params of an addon
 func (c *CoreDNSClient) ValidateParams() (bool, error) {
 
-	if _, ok := c.overrideParams["dnsDomain"]; !ok {
-		return false, addonerr.InvalidParams("dnsDomain")
-	}
+	params := []string{"dnsDomain", "dnsMemoryLimit", "dnsServer"}
 
-	if _, ok := c.overrideParams["dnsMemoryLimit"]; !ok {
-		return false, addonerr.InvalidParams("dnsMemoryLimit")
-	}
-
-	if _, ok := c.overrideParams["dnsServer"]; !ok {
-		return false, addonerr.InvalidParams("dnsServer")
+	for _, p := range params {
+		if _, ok := c.overrideParams[p]; !ok {
+			return false, addonerr.InvalidParams(p)
+		}
 	}
 
 	if b, ok := c.overrideParams["enableAdditionalDnsConfig"]; ok {

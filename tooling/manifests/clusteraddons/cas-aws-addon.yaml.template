@@ -14,3 +14,11 @@ spec:
       value: __CLUSTER_UUID__
     - name: clusterRegion
       value: __CLUSTER_REGION__
+    - name: cpuRequest
+      value: 100m
+    - name: cpuLimit
+      value: 200m
+    - name: memRequest
+      value: 300Mi
+    - name: memLimit
+      value: 600Mi
