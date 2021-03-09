@@ -85,9 +85,9 @@ func (c *MetallbClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "metallb.yaml")
 	outputFilePath := filepath.Join(outputPath, "metallb.yaml")
 
-	err = c.preInstall()
+	err = c.processIPRange()
 	if err != nil {
-		log.Errorf("Failed to process pre install for metallb: %s", err)
+		log.Errorf("Failed to process ip range for metallb: %s", err)
 		return err
 	}
 
@@ -121,6 +121,12 @@ func (c *MetallbClient) Uninstall() error {
 
 	inputFilePath := filepath.Join(inputPath, "metallb.yaml")
 	outputFilePath := filepath.Join(outputPath, "metallb.yaml")
+
+	err = c.processIPRange()
+	if err != nil {
+		log.Errorf("Failed to process ip range for metallb: %s", err)
+		return err
+	}
 
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
 	if err != nil {
@@ -165,7 +171,7 @@ func (c *MetallbClient) postInstall() error {
 	return nil
 }
 
-func (c *MetallbClient) preInstall() error {
+func (c *MetallbClient) processIPRange() error {
 
 	metallbIPRange, ok := c.overrideParams["MetallbIpRange"]
 	if !ok {
