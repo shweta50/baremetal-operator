@@ -176,16 +176,6 @@ func (w *Watcher) HealthCheck(clusterID, projectID string) error {
 		return err
 	}
 
-	if err := w.syncClusterAddons(clusterID, projectID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-//sync the state of ClusterAddon objects on sunpike with local Addon objects
-func (w *Watcher) syncClusterAddons(clusterID, projectID string) error {
-
 	ksToken, err := token.GetSunpikeToken()
 	if err != nil {
 		log.Errorf("Failed to generate token: %s", err)
@@ -197,6 +187,16 @@ func (w *Watcher) syncClusterAddons(clusterID, projectID string) error {
 		log.Errorf("Unable to get kubeconfig for cluster: %s %s", clusterID, err)
 		return err
 	}
+
+	if err := w.SyncClusterAddons(clusterID, projectID, kubeCfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//SyncClusterAddons will sync the state of ClusterAddon objects on sunpike with local Addon objects
+func (w *Watcher) SyncClusterAddons(clusterID, projectID string, kubeCfg *rest.Config) error {
 
 	//Store ClusterAddon objects in a map
 	mapClsAddon, err := w.getAddonsFromSunpike(kubeCfg, clusterID, projectID)
