@@ -82,7 +82,7 @@ data:
         loadbalance
     }
 {{- if eq .enableAdditionalDnsConfig "true" }}
-    {{ .base64EncAdditionalDnsConfig }}
+{{ .base64EncAdditionalDnsConfig | indent 4 }}
 {{- end }}
 ---
 apiVersion: apps/v1

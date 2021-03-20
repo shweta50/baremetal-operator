@@ -1,6 +1,7 @@
 package addons
 
 import (
+	"fmt"
 	"path/filepath"
 
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
@@ -55,6 +56,10 @@ func (c *AutoScalerAwsClient) Health() (bool, error) {
 		return false, err
 	}
 
+	if deploy == nil {
+		return false, nil
+	}
+
 	if deploy.Status.ReadyReplicas > 0 {
 		return true, nil
 	}
@@ -70,6 +75,15 @@ func (c *AutoScalerAwsClient) Upgrade() error {
 //Install installs an CAutoScalerAws instance
 func (c *AutoScalerAwsClient) Install() error {
 
+	b, err := util.CheckClusterUpgrading(c.client)
+	if err != nil {
+		return err
+	}
+
+	if b {
+		return fmt.Errorf("Cluster is upgrading ignoring request")
+	}
+
 	inputPath, outputPath, err := util.EnsureDirStructure(casAWSDir, c.version)
 	if err != nil {
 		return err
@@ -78,7 +92,7 @@ func (c *AutoScalerAwsClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -96,6 +110,15 @@ func (c *AutoScalerAwsClient) Install() error {
 //Uninstall removes an CAutoScalerAws instance
 func (c *AutoScalerAwsClient) Uninstall() error {
 
+	b, err := util.CheckClusterUpgrading(c.client)
+	if err != nil {
+		return err
+	}
+
+	if b {
+		return fmt.Errorf("Cluster is upgrading ignoring request")
+	}
+
 	inputPath, outputPath, err := util.EnsureDirStructure(casAWSDir, c.version)
 	if err != nil {
 		return err
@@ -104,7 +127,7 @@ func (c *AutoScalerAwsClient) Uninstall() error {
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

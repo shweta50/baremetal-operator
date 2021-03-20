@@ -61,7 +61,7 @@ func (c *KubeVirtClient) Install() error {
 		inputFilePath := filepath.Join(inputPath, y)
 		outputFilePath := filepath.Join(outputPath, y)
 
-		if err := c.install(inputFilePath, outputFilePath); err != nil {
+		if err := c.install(inputFilePath, outputFilePath, y); err != nil {
 			return err
 		}
 	}
@@ -83,16 +83,16 @@ func (c *KubeVirtClient) Uninstall() error {
 		inputFilePath := filepath.Join(inputPath, y)
 		outputFilePath := filepath.Join(outputPath, y)
 
-		if err := c.uninstall(inputFilePath, outputFilePath); err != nil {
+		if err := c.uninstall(inputFilePath, outputFilePath, y); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *KubeVirtClient) install(inputFilePath, outputFilePath string) error {
+func (c *KubeVirtClient) install(inputFilePath, outputFilePath, fileName string) error {
 
-	err := util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err := util.WriteConfigToTemplate(inputFilePath, outputFilePath, fileName, c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -107,9 +107,9 @@ func (c *KubeVirtClient) install(inputFilePath, outputFilePath string) error {
 	return nil
 }
 
-func (c *KubeVirtClient) uninstall(inputFilePath, outputFilePath string) error {
+func (c *KubeVirtClient) uninstall(inputFilePath, outputFilePath, fileName string) error {
 
-	err := util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err := util.WriteConfigToTemplate(inputFilePath, outputFilePath, fileName, c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

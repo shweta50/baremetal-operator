@@ -58,6 +58,10 @@ func (c *DashboardClient) Health() (bool, error) {
 		return false, err
 	}
 
+	if deploy == nil || deployScraper == nil {
+		return false, nil
+	}
+
 	if deployScraper.Status.ReadyReplicas > 0 && deploy.Status.ReadyReplicas > 0 {
 		return true, nil
 	}
@@ -80,7 +84,7 @@ func (c *DashboardClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "dashboard.yaml")
 	outputFilePath := filepath.Join(outputPath, "dashboard.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "dashboard.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -112,7 +116,7 @@ func (c *DashboardClient) Uninstall() error {
 	inputFilePath := filepath.Join(inputPath, "dashboard.yaml")
 	outputFilePath := filepath.Join(outputPath, "dashboard.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "dashboard.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

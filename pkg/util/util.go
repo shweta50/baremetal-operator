@@ -14,9 +14,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Masterminds/sprig"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	k8serror "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiyaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -74,8 +75,8 @@ func GetOverrideParams(addon *agentv1.Addon) (map[string]interface{}, error) {
 }
 
 //WriteConfigToTemplate writes templatized yaml to output dir
-func WriteConfigToTemplate(inputPath, outputPath string, params map[string]interface{}) error {
-	t, err := template.ParseFiles(inputPath)
+func WriteConfigToTemplate(inputPath, outputPath, fileName string, params map[string]interface{}) error {
+	t, err := template.New(fileName).Funcs(sprig.TxtFuncMap()).ParseFiles(inputPath)
 	if err != nil {
 		return err
 	}
@@ -196,7 +197,7 @@ func GetSecret(ns, name string, c client.Client) (*corev1.Secret, error) {
 		Name:      name,
 	}, secret)
 	if err != nil {
-		if k8serror.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
 
@@ -226,6 +227,44 @@ func CreateSecret(ns, name, key, data string, c client.Client) error {
 	return nil
 }
 
+//GetConfigMap gets a configmap
+func GetConfigMap(ns, name string, c client.Client) (*corev1.ConfigMap, error) {
+	cfgMap := &corev1.ConfigMap{}
+
+	err := c.Get(context.Background(), client.ObjectKey{
+		Namespace: ns,
+		Name:      name,
+	}, cfgMap)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return cfgMap, nil
+}
+
+//CheckClusterUpgrading check if cluster is in upgrading mode
+func CheckClusterUpgrading(c client.Client) (bool, error) {
+
+	cm, err := GetConfigMap("default", "pmk", c)
+	if err != nil {
+		log.Errorf("Failed to get configmap pmk: %s", err)
+		return false, err
+	}
+
+	if cm != nil {
+		v, e := cm.Data["upgrading"]
+		if e && v == "true" {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func renderTemplateToFile(config map[string]interface{}, t *template.Template, filename string) error {
 
 	f, err := os.Create(filename)
@@ -251,7 +290,7 @@ func GetDeployment(ns, name string, c client.Client) (*appsv1.Deployment, error)
 		Name:      name,
 	}, d)
 	if err != nil {
-		if k8serror.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
 
@@ -270,7 +309,7 @@ func GetDaemonset(ns, name string, c client.Client) (*appsv1.DaemonSet, error) {
 		Name:      name,
 	}, d)
 	if err != nil {
-		if k8serror.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
 

@@ -1,6 +1,7 @@
 package addons
 
 import (
+	"fmt"
 	"path/filepath"
 
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
@@ -54,6 +55,10 @@ func (c *AutoScalerAzureClient) Health() (bool, error) {
 		return false, err
 	}
 
+	if deploy == nil {
+		return false, nil
+	}
+
 	if deploy.Status.ReadyReplicas > 0 {
 		return true, nil
 	}
@@ -69,6 +74,15 @@ func (c *AutoScalerAzureClient) Upgrade() error {
 //Install installs an CAutoScalerAzure instance
 func (c *AutoScalerAzureClient) Install() error {
 
+	b, err := util.CheckClusterUpgrading(c.client)
+	if err != nil {
+		return err
+	}
+
+	if b {
+		return fmt.Errorf("Cluster is upgrading ignoring request")
+	}
+
 	inputPath, outputPath, err := util.EnsureDirStructure(casAzureDir, c.version)
 	if err != nil {
 		return err
@@ -77,7 +91,7 @@ func (c *AutoScalerAzureClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -95,6 +109,15 @@ func (c *AutoScalerAzureClient) Install() error {
 //Uninstall removes an CAutoScalerAzure instance
 func (c *AutoScalerAzureClient) Uninstall() error {
 
+	b, err := util.CheckClusterUpgrading(c.client)
+	if err != nil {
+		return err
+	}
+
+	if b {
+		return fmt.Errorf("Cluster is upgrading ignoring request")
+	}
+
 	inputPath, outputPath, err := util.EnsureDirStructure(casAzureDir, c.version)
 	if err != nil {
 		return err
@@ -103,7 +126,7 @@ func (c *AutoScalerAzureClient) Uninstall() error {
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

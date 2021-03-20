@@ -47,6 +47,10 @@ func (c *MetricsServerClient) Health() (bool, error) {
 		return false, err
 	}
 
+	if deploy == nil {
+		return false, nil
+	}
+
 	if deploy.Status.ReadyReplicas > 0 {
 		return true, nil
 	}
@@ -70,7 +74,7 @@ func (c *MetricsServerClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "metrics-server.yaml")
 	outputFilePath := filepath.Join(outputPath, "metrics-server.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metrics-server.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -95,7 +99,7 @@ func (c *MetricsServerClient) Uninstall() error {
 	inputFilePath := filepath.Join(inputPath, "metrics-server.yaml")
 	outputFilePath := filepath.Join(outputPath, "metrics-server.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metrics-server.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

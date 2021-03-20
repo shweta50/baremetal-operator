@@ -57,8 +57,12 @@ func (c *MetallbClient) Health() (bool, error) {
 
 	deploy, err := util.GetDeployment(metallbNS, metallbDeploy, c.client)
 	if err != nil {
-		log.Errorf("Failed to get daemonset: %s", err)
+		log.Errorf("Failed to get deployment: %s", err)
 		return false, err
+	}
+
+	if daemonset == nil || deploy == nil {
+		return false, nil
 	}
 
 	if deploy.Status.ReadyReplicas > 0 &&
@@ -91,7 +95,7 @@ func (c *MetallbClient) Install() error {
 		return err
 	}
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metallb.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -128,7 +132,7 @@ func (c *MetallbClient) Uninstall() error {
 		return err
 	}
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metallb.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

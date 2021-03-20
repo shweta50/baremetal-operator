@@ -69,6 +69,10 @@ func (c *CoreDNSClient) Health() (bool, error) {
 		return false, err
 	}
 
+	if d == nil {
+		return false, nil
+	}
+
 	if d.Status.ReadyReplicas > 0 {
 		return true, nil
 	}
@@ -91,7 +95,7 @@ func (c *CoreDNSClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "coredns.yaml")
 	outputFilePath := filepath.Join(outputPath, "coredns.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "coredns.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
@@ -117,7 +121,7 @@ func (c *CoreDNSClient) Uninstall() error {
 	inputFilePath := filepath.Join(inputPath, "coredns.yaml")
 	outputFilePath := filepath.Join(outputPath, "coredns.yaml")
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, c.overrideParams)
+	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "coredns.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err
