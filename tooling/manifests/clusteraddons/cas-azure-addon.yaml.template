@@ -10,16 +10,6 @@ spec:
   watch: true
   override:
     params:
-    - name: clientID
-      value: __CLIENT_ID__
-    - name: clientSecret
-      value: __CLIENT_SECRET__
-    - name: resourceGroup
-      value: __RESOURCE_GROUP__
-    - name: subscriptionID
-      value: __SUBSCRIPTION_ID__
-    - name: tenantID
-      value: __TENANT_ID__
     - name: minNumWorkers
       value: __MIN_NUM_WORKERS__
     - name: maxNumWorkers

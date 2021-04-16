@@ -1,0 +1,51 @@
+{
+    "apiVersion": "sunpike.platform9.com/v1alpha2",
+    "kind": "ClusterAddon",
+    "metadata": {
+        "labels": {
+            "sunpike.pf9.io/cluster": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+            "type": "cluster-auto-scaler-azure"
+        },
+        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-cluster-auto-scaler-azure",
+        "namespace": "default"
+    },
+    "spec": {
+        "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+        "override": {
+            "params": [
+                {
+                    "name": "minNumWorkers",
+                    "value": "1"
+                },                
+                {
+                    "name": "maxNumWorkers",
+                    "value": "10"
+                },
+                {
+                    "name": "clientID",
+                    "value": "BF915C66-FC93-4F2A-BE3F-F6DD440023B1"
+                },                
+                {
+                    "name": "clientSecret",
+                    "value": "BF915C66-FC93-4F2A-BE3F-F6DD440023B1"
+                },                
+                {
+                    "name": "resourceGroup",
+                    "value": "BF915C66-FC93-4F2A-BE3F-F6DD440023B1"
+                },                
+                {
+                    "name": "subscriptionID",
+                    "value": "BF915C66-FC93-4F2A-BE3F-F6DD440023B1"
+                },
+                {
+                    "name": "tenantID",
+                    "value": "BF915C66-FC93-4F2A-BE3F-F6DD440023B1"
+                }
+            ]
+        },
+        "type": "cluster-auto-scaler-azure",
+        "version": "1.13.8",
+        "watch": true
+    }
+}
+

@@ -35,6 +35,26 @@ import (
 	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 )
 
+const (
+	addonsNS             = "pf9-addons"
+	addonsConfigSecret   = "addon-config"
+	envVarDisableSunpike = "DISABLE_SUNPIKE_SYNC"
+	envVarQuayRegistry   = "QUAY_REGISTRY"
+	envVarK8sRegistry    = "K8S_REGISTRY"
+	envVarGcrRegistry    = "GCR_REGISTRY"
+	envVarDockerRegistry = "DOCKER_REGISTRY"
+
+	defaultQuayRegistry   = "quay.io"
+	defaultK8sRegistry    = "k8s.gcr.io"
+	defaultGcrRegistry    = "gcr.io"
+	defaultDockerRegistry = ""
+
+	templateQuayRegistry   = "QuayRegistry"
+	templateK8sRegistry    = "K8sRegistry"
+	templateGcrRegistry    = "GcrRegistry"
+	templateDockerRegistry = "DockerRegistry"
+)
+
 // Watcher handles events on the Addon object
 type Watcher struct {
 	client client.Client

@@ -34,6 +34,12 @@ func newAutoScalerAws(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
+//overrideRegistry checks if we need to override container registry values
+func (c *AutoScalerAwsClient) overrideRegistry() {
+	c.overrideParams[templateK8sRegistry] = util.GetRegistry(envVarK8sRegistry, defaultK8sRegistry)
+	log.Infof("Using container registry: %s", c.overrideParams[templateK8sRegistry])
+}
+
 //ValidateParams validates params of an addon
 func (c *AutoScalerAwsClient) ValidateParams() (bool, error) {
 
@@ -92,6 +98,8 @@ func (c *AutoScalerAwsClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
 
+	c.overrideRegistry()
+
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
@@ -126,6 +134,8 @@ func (c *AutoScalerAwsClient) Uninstall() error {
 
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
+
+	c.overrideRegistry()
 
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {

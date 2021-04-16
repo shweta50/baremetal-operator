@@ -1,0 +1,26 @@
+{
+    "apiVersion": "agent.pf9.io/v1",
+    "kind": "Addon",
+    "metadata": {
+        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-coredns",
+        "namespace": "default"
+    },
+    "spec": {
+        "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+        "override": {
+            "params": [
+                {
+                    "name": "dnsMemoryLimit",
+                    "value": "170Mi"
+                },
+                {
+                    "name": "dnsDomain",
+                    "value": "cluster.local"
+                }
+            ]
+        },
+        "type": "coredns",
+        "version": "1.7.0",
+        "watch": true
+    }
+}

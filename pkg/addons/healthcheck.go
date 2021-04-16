@@ -18,17 +18,13 @@ package addons
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	log "github.com/sirupsen/logrus"
-
-	//	v1 "k8s.io/api/core/v1"
-	//v1 "k8s.io/api/core/v1"
-
-	//"k8s.io/client-go/kubernetes"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/pkg/token"
@@ -41,11 +37,7 @@ const (
 	sunpikeNs           = "default"
 )
 
-var obsClusterAddons map[string]bool
-
-func init() {
-	obsClusterAddons = make(map[string]bool, 10)
-}
+var disableSync = os.Getenv("DISABLE_SUNPIKE_SYNC")
 
 func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectID string) (map[string]v1alpha2.ClusterAddon, error) {
 
@@ -176,6 +168,10 @@ func (w *Watcher) HealthCheck(clusterID, projectID string) error {
 		return err
 	}
 
+	if disableSync == "true" {
+		return nil
+	}
+
 	ksToken, err := token.GetSunpikeToken()
 	if err != nil {
 		log.Errorf("Failed to generate token: %s", err)
@@ -218,7 +214,6 @@ func (w *Watcher) SyncClusterAddons(clusterID, projectID string, kubeCfg *rest.C
 	for _, clsAddon := range mapClsAddon {
 		localAddon, ok := mapAddon[clsAddon.Name]
 		w.processClusterAddon(kubeCfg, &clsAddon, &localAddon, ok)
-		obsClusterAddons[clsAddon.Name] = true
 	}
 
 	//In case of a diff is detected between status of local Addon object and
@@ -234,6 +229,7 @@ func (w *Watcher) SyncClusterAddons(clusterID, projectID string, kubeCfg *rest.C
 func (w *Watcher) processLocalAddon(kubeCfg *rest.Config, localAddon *agentv1.Addon, clsAddon *v1alpha2.ClusterAddon, clsAddonFound bool) error {
 
 	if clsAddonFound {
+		//Did not use reflect.DeepEqual because we are comparing two different objects
 		if localAddon.Status.Phase == clsAddon.Status.Phase &&
 			localAddon.Status.Healthy == clsAddon.Status.Healthy &&
 			localAddon.Status.Message == clsAddon.Status.Message {
@@ -249,19 +245,6 @@ func (w *Watcher) processLocalAddon(kubeCfg *rest.Config, localAddon *agentv1.Ad
 		if err := w.updateSunpikeStatus(kubeCfg, clsAddon); err != nil {
 			log.Errorf("Failed to update ClusterAddon status: %s %s", clsAddon.Name, err)
 		}
-	} else {
-		if _, ok := obsClusterAddons[localAddon.Name]; ok {
-			log.Infof("Already seen ClusterAddon object: %s, not creating", localAddon.Name)
-			return nil
-		}
-
-		log.Infof("Creating ClusterAddon object: %s", localAddon.Name)
-		convClsAddon := convertToClsAddon(localAddon)
-		if err := w.createSunpikeAddon(kubeCfg, &convClsAddon); err != nil {
-			log.Errorf("Failed to create ClusterAddon: %s %s", convClsAddon.Name, err)
-		}
-
-		obsClusterAddons[localAddon.Name] = true
 	}
 
 	return nil

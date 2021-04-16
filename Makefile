@@ -1,21 +1,12 @@
 CGO_ENABLED=0
-GOOS=darwin
+GOOS=linux
 GOARCH=amd64
-COMPILE_IMAGE=golang:mk
-REPO_URL=github.com
-ORG=platform9
-REPO=pf9-addon-operator
-COMPONENTS=agent
-DOCKER=docker
-DOCKER_PULL_CMD=${DOCKER} pull
-DOCKER_PUSH_CMD=${DOCKER} push
-DOCKER_RUN_CMD=${DOCKER} run --rm
-DOCKER_BUILD_CMD=${DOCKER} build
-DOCKER_RMI_CMD=${DOCKER} rmi
-RM=rm
-REGISTRY=docker.io
-IMAGE_PROJECT=platform9
-RELEASE=1.0.0
+RELEASE=2.0.0
+KUBERNETES_VERSION="v1.20.5"
+KUBERNETES_GITHUB_RAW_BASEURL := https://raw.githubusercontent.com/kubernetes/kubernetes/${KUBERNETES_VERSION}
+WGET_CMD := wget --progress=dot:giga
+
+
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
@@ -38,47 +29,39 @@ all: compile build
 
 # Compile and generate static binaries
 compile: 
-	for component in ${COMPONENTS}; do \
-		echo "Compiling and building $${component} static binary"; \
-		${DOCKER_RUN_CMD} -e CGO_ENABLED=${CGO_ENABLED} \
-			-e GO111MODULE="on" \
-			-e GOOS=${GOOS} \
-			-e GOARCH=${GOARCH} \
-			-v ${PWD}:/go/src/${REPO_URL}/${ORG}/${REPO}:Z \
-			-v ${PWD}/bin:/go/bin:Z \
-			-w /go/src/${REPO_URL}/${ORG}/${REPO} \
-			${COMPILE_IMAGE} \
-			sh -c \
-            "go mod download && \
-            go build -ldflags \"-extldflags \"-static\"\" -gcflags=\"all=-N -l\" \
-			-o /go/bin/$${component} \
-			${REPO_URL}/${ORG}/${REPO}/cmd/$${component}";\
-	done
+	echo "Compiling and building static binary"; \
+	CGO_ENABLED=${CGO_ENABLED} GOOS=${GOOS} GOARCH=${GOARCH} \
+	go build -o bin/manager cmd/agent/agent.go 
+
+unit-tests: 
+	echo "Running Unit tests"; \
+	DU_FQDN=localhost go test ./tests/
 
 build: compile
-	for component in ${COMPONENTS}; do \
-		echo "Building docker image for $${component}"; \
-		${DOCKER_BUILD_CMD} --network host -t ${REGISTRY}/${IMAGE_PROJECT}/$${component}:${RELEASE} \
-			-f ${PWD}/tooling/$${component}.df \
-			${PWD}; \
-	done
+	echo "Building docker image"; \
+	docker build -t platform9/pf9-addon-operator:${RELEASE} -f tooling/agent.df .
+
 
 release: build
-	for component in ${COMPONENTS}; do \
-		echo "Pushing docker image for $${component} to registy"; \
-		${DOCKER_PUSH_CMD} ${REGISTRY}/${IMAGE_PROJECT}/$${component}:${RELEASE}; \
-	done
+	echo "Pushing docker image to registy"; \
+	docker push platform9/pf9-addon-operator:${RELEASE}
 
+get-latest-addons:
+	mkdir -p /tmp/coredns /tmp/metrics-server
+	cd /tmp/coredns && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/dns/coredns/coredns.yaml.in
+	cd /tmp/metrics-server && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/metrics-server/auth-delegator.yaml && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/metrics-server/auth-reader.yaml && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/metrics-server/metrics-apiservice.yaml && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/metrics-server/metrics-server-deployment.yaml && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/metrics-server/metrics-server-service.yaml && \
+	${WGET_CMD} $(KUBERNETES_GITHUB_RAW_BASEURL)/cluster/addons/metrics-server/resource-reader.yaml
+        
 
 # Cleanup build artifacts
 clean:
-	- for component in ${COMPONENTS}; do \
-		  ${DOCKER_RUN_CMD} \
-			-v ${PWD}/bin:/go/bin:Z \
-			${COMPILE_IMAGE} ${RM} -f /go/bin/$${component} && \
-			${DOCKER_RMI_CMD} ${REGISTRY}/${IMAGE_PROJECT}/$${component}:${RELEASE}; \
-		done
-	- rm -rf ${PWD}/bin
+	rm -rf ${PWD}/bin
 
 
 # Build manager binary

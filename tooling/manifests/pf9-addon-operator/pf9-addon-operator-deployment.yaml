@@ -30,6 +30,8 @@ spec:
           value: "INFO"
         - name: HEALTHCHECK_INTERVAL_SECS
           value: "90"
+        - name: DISABLE_SUNPIKE_SYNC
+          value: "false"
         - name: CLUSTER_ID
           value: __CLUSTER_ID__
         - name: PROJECT_ID

@@ -2,13 +2,17 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
@@ -26,212 +30,111 @@ func init() {
 	agentv1.AddToScheme(scheme)
 }
 
-func createCoreDNS() *agentv1.Addon {
-	addon := agentv1.Addon{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      uuid + "-coredns",
-			Namespace: "pf9-addons",
-		},
-		Spec: agentv1.AddonSpec{
-			ClusterID: uuid,
-			Version:   "1.7.0",
-			Type:      "coredns",
-		},
+func getAddon(fileName string) (*agentv1.Addon, error) {
+	addon := &agentv1.Addon{}
+
+	text, err := ioutil.ReadFile("test_data/" + fileName)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(text, addon); err != nil {
+		return nil, err
 	}
 
-	addon.Spec.Override.Params = []agentv1.Params{
-		agentv1.Params{
-			Name:  "dnsMemoryLimit",
-			Value: "170Mi",
-		},
-		agentv1.Params{
-			Name:  "dnsDomain",
-			Value: "cluster.local",
-		},
-		agentv1.Params{
-			Name:  "dnsServer",
-			Value: "10.21.0.1",
-		},
-	}
-
-	return &addon
+	return addon, nil
 }
 
-func createMetallb() *agentv1.Addon {
-	addon := agentv1.Addon{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      uuid + "-metallb",
-			Namespace: "pf9-addons",
-		},
-		Spec: agentv1.AddonSpec{
-			ClusterID: uuid,
-			Version:   "0.9.5",
-			Type:      "metallb",
-		},
-	}
+func getSvc(ns, name string, c client.Client) (*corev1.Service, error) {
+	svc := corev1.Service{}
 
-	return &addon
+	err := c.Get(ctx, client.ObjectKey{
+		Namespace: ns,
+		Name:      name,
+	}, &svc)
+	return &svc, err
 }
 
-func createDashboard() *agentv1.Addon {
-	addon := agentv1.Addon{
+func createAddonConfigSecret(c client.Client) error {
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      uuid + "-dashboard",
 			Namespace: "pf9-addons",
+			Name:      "addon-config",
 		},
-		Spec: agentv1.AddonSpec{
-			ClusterID: uuid,
-			Version:   "2.0.3",
-			Type:      "kubernetes-dashboard",
-		},
-	}
-
-	return &addon
-}
-
-func createMetricsServer() *agentv1.Addon {
-	addon := agentv1.Addon{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      uuid + "-metrics-server",
-			Namespace: "pf9-addons",
-		},
-		Spec: agentv1.AddonSpec{
-			ClusterID: uuid,
-			Version:   "0.3.6",
-			Type:      "metrics-server",
+		Data: map[string][]byte{
+			"dnsIP":          []byte("10.21.0.2"),
+			"clientID":       []byte("QjgxMDI2RjItMjY3MS00REU3LTk1M0QtODg0NDc5QkFBM0ZCCg=="),
+			"clientSecret":   []byte("MDEzQ0FGMUYtNDc1Ni00N0ZBLUJCMzItMDM2RUE4MzZFOUFFCg=="),
+			"resourceGroup":  []byte("MTEwQjdGRkYtQzY0RC00MDU5LTg5RUYtNjIyM0Y5N0NBM0M5Cg=="),
+			"subscriptionID": []byte("MTZDQjkyMTgtRTA3RC00NzNFLUE5MEEtOTNDNDEyMzFFRjNCCg=="),
+			"tenantID":       []byte("Nzc5NEI2QkItMEI1RS00NzgxLTkzNjQtNjZCNzlEQTVEQ0ZECg=="),
 		},
 	}
 
-	return &addon
-}
-
-func createAWSAutoScaler() *agentv1.Addon {
-	addon := agentv1.Addon{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      uuid + "-aws",
-			Namespace: "pf9-addons",
-		},
-		Spec: agentv1.AddonSpec{
-			ClusterID: uuid,
-			Version:   "1.14.7",
-			Type:      "cluster-auto-scaler-aws",
-		},
+	err := c.Create(context.Background(), secret)
+	if err != nil {
+		return err
 	}
 
-	addon.Spec.Override.Params = []agentv1.Params{
-		agentv1.Params{
-			Name:  "clusterUUID",
-			Value: "uuid",
-		},
-		agentv1.Params{
-			Name:  "clusterRegion",
-			Value: "region",
-		},
-		agentv1.Params{
-			Name:  "cpuRequest",
-			Value: "100m",
-		},
-		agentv1.Params{
-			Name:  "cpuLimit",
-			Value: "200m",
-		},
-		agentv1.Params{
-			Name:  "memRequest",
-			Value: "300Mi",
-		},
-		agentv1.Params{
-			Name:  "memLimit",
-			Value: "600Mi",
-		},
-	}
-
-	return &addon
-}
-
-func createAzureAutoScaler() *agentv1.Addon {
-
-	addon := agentv1.Addon{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      uuid + "-azure",
-			Namespace: "pf9-addons",
-		},
-		Spec: agentv1.AddonSpec{
-			ClusterID: uuid,
-			Version:   "1.13.8",
-			Type:      "cluster-auto-scaler-azure",
-		},
-	}
-
-	addon.Spec.Override.Params = []agentv1.Params{
-		agentv1.Params{
-			Name:  "clientID",
-			Value: "uuid",
-		},
-		agentv1.Params{
-			Name:  "clientSecret",
-			Value: "secret",
-		},
-		agentv1.Params{
-			Name:  "resourceGroup",
-			Value: "resourcegroup",
-		},
-		agentv1.Params{
-			Name:  "subscriptionID",
-			Value: "subID",
-		},
-		agentv1.Params{
-			Name:  "tenantID",
-			Value: "tenID",
-		},
-		agentv1.Params{
-			Name:  "minNumWorkers",
-			Value: "1",
-		},
-		agentv1.Params{
-			Name:  "maxNumWorkers",
-			Value: "10",
-		},
-	}
-
-	return &addon
+	return nil
 }
 
 func TestCoreDNS(t *testing.T) {
+	ns := "kube-system"
+	name := "kube-dns"
 
 	client := fake.NewFakeClientWithScheme(scheme)
 
 	w, err := addons.New(client)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	assert.Equal(t, nil, err)
 
-	addon := createCoreDNS()
+	//Default coredns without additional DNS config
+	addon, err := getAddon("coredns.addon")
+	assert.Equal(t, nil, err)
+
 	addonWithDNS := addon.DeepCopy()
-
-	addon.Spec.Override.Params = append(addon.Spec.Override.Params, agentv1.Params{
-		Name:  "enableAdditionalDnsConfig",
-		Value: "false",
-	})
-
-	addonWithDNS.Spec.Override.Params = append(addonWithDNS.Spec.Override.Params, agentv1.Params{
-		Name:  "enableAdditionalDnsConfig",
-		Value: "true",
-	})
+	addonWithIP := addon.DeepCopy()
 
 	addonWithDNS.Spec.Override.Params = append(addonWithDNS.Spec.Override.Params, agentv1.Params{
 		Name:  "base64EncAdditionalDnsConfig",
-		Value: "ICAgICAga2ZwbGMuY29tOjUzIHsKICAgICAgZXJyb3JzCiAgICAgIGNhY2hlIDMwCiAgICAgIGZvcndhcmQgLiAxMC4yNDYuNi4xCiAgICAgIH0K",
+		Value: "a2ZwbGMuY29tOjUzIHsKCWVycm9ycwoJY2FjaGUgMzAKCWZvcndhcmQgLiAxMC4yNDYuNi4xCn0K",
 	})
 
+	//If DNS server is specified no need to get it from addon-config
+	addonWithIP.Spec.Override.Params = append(addon.Spec.Override.Params, agentv1.Params{
+		Name:  "dnsServer",
+		Value: "10.21.0.1",
+	})
+
+	//Addon for which dnsServer is specified
+	err = w.SyncEvent(addonWithIP, "install")
+	assert.Equal(t, nil, err)
+
+	svc, err := getSvc(ns, name, client)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "10.21.0.1", svc.Spec.ClusterIP)
+
+	err = w.SyncEvent(addonWithIP, "uninstall")
+	assert.Equal(t, nil, err)
+
+	//Create addon-config secret
+	err = createAddonConfigSecret(client)
+	assert.Equal(t, nil, err)
+
+	//Addon for which dnsServer is not specified, should get it from addon-config
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
 
 	err = w.SyncEvent(addon, "install")
 	assert.Equal(t, nil, err)
 
+	svc, err = getSvc(ns, name, client)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "10.21.0.2", svc.Spec.ClusterIP)
+
 	err = w.SyncEvent(addon, "uninstall")
 	assert.Equal(t, nil, err)
 
+	//Addon for which additional DNS Config is specified
 	err = w.SyncEvent(addonWithDNS, "install")
 	assert.Equal(t, nil, err)
 
@@ -248,8 +151,7 @@ func TestDashboard(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon := createDashboard()
-
+	addon, _ := getAddon("dashboard.addon")
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
 
@@ -287,7 +189,7 @@ func TestMetricsServer(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon := createMetricsServer()
+	addon, _ := getAddon("metric-server.addon")
 
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
@@ -308,7 +210,7 @@ func TestMetallb(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon := createMetallb()
+	addon, _ := getAddon("metallb.addon")
 	addonMultiRange := addon.DeepCopy()
 
 	addon.Spec.Override.Params = append(addon.Spec.Override.Params, agentv1.Params{
@@ -347,7 +249,7 @@ func TestAWSAutoScaler(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon := createAWSAutoScaler()
+	addon, _ := getAddon("cas-aws.addon")
 
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
@@ -368,7 +270,8 @@ func TestAzureAutoScaler(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon := createAzureAutoScaler()
+	addon, _ := getAddon("cas-azure.addon")
+	addonWithoutParams := addon.DeepCopy()
 
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
@@ -378,4 +281,26 @@ func TestAzureAutoScaler(t *testing.T) {
 
 	err = w.SyncEvent(addon, "uninstall")
 	assert.Equal(t, nil, err)
+
+	//Create addon-config secret
+	err = createAddonConfigSecret(client)
+	assert.Equal(t, nil, err)
+
+	addonWithoutParams.Spec.Override.Params = []agentv1.Params{
+		agentv1.Params{
+			Name:  "minNumWorkers",
+			Value: "1",
+		},
+		agentv1.Params{
+			Name:  "maxNumWorkers",
+			Value: "10",
+		},
+	}
+
+	err = w.SyncEvent(addonWithoutParams, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addonWithoutParams, "uninstall")
+	assert.Equal(t, nil, err)
+
 }

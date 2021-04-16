@@ -81,7 +81,7 @@ data:
         reload
         loadbalance
     }
-{{- if eq .enableAdditionalDnsConfig "true" }}
+{{- if .base64EncAdditionalDnsConfig }}
 {{ .base64EncAdditionalDnsConfig | indent 4 }}
 {{- end }}
 ---
@@ -134,7 +134,7 @@ spec:
         kubernetes.io/os: linux
       containers:
       - name: coredns
-        image: k8s.gcr.io/coredns:1.7.0
+        image: {{ .K8sRegistry }}/coredns:1.7.0
         imagePullPolicy: IfNotPresent
         resources:
           limits:

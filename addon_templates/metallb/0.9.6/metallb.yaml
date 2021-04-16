@@ -321,9 +321,9 @@ spec:
               name: memberlist
               key: secretkey
 {{- if .DockerRegistry }}
-        image: {{ .DockerRegistry }}/metallb/speaker:v0.9.5
+        image: {{ .DockerRegistry }}/metallb/speaker:v0.9.6
 {{- else }}
-        image: metallb/speaker:v0.9.5
+        image: metallb/speaker:v0.9.6
 {{- end }}
         imagePullPolicy: Always
         name: speaker
@@ -381,9 +381,9 @@ spec:
         - --port=7472
         - --config=config
 {{- if .DockerRegistry }}
-        image: {{ .DockerRegistry }}/metallb/controller:v0.9.5
+        image: {{ .DockerRegistry }}/metallb/controller:v0.9.6
 {{- else }}
-        image: metallb/controller:v0.9.5
+        image: metallb/controller:v0.9.6
 {{- end }}
         imagePullPolicy: Always
         name: controller

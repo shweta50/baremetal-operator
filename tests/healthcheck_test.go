@@ -34,8 +34,6 @@ var (
 	sunpikeClient client.Client
 )
 
-type createAddon func() *agentv1.Addon
-
 func init() {
 	clientgoscheme.AddToScheme(localScheme)
 	agentv1.AddToScheme(localScheme)
@@ -158,12 +156,20 @@ func addAPI(m *mux.Router) {
 	m.HandleFunc("/qbert/v4beta1/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons", listFakeClusterAddons).Methods("GET")
 }
 
-func createLocalAddons(fn createAddon) {
-	addon := fn()
+func createClusterAddonFromFile(fileName string) error {
 
-	if err := localClient.Create(ctx, addon); err != nil {
-		fmt.Printf("Failed to create metrics server addon: %s", err.Error())
+	clsAddon := &sunpikev1alpha2.ClusterAddon{}
+
+	text, err := ioutil.ReadFile("test_data/" + fileName)
+	if err != nil {
+		return err
 	}
+	if err := json.Unmarshal(text, clsAddon); err != nil {
+		return err
+	}
+
+	createClusterAddon(clsAddon)
+	return nil
 }
 
 func createClusterAddon(clsAddon *sunpikev1alpha2.ClusterAddon) {
@@ -233,22 +239,22 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//------------------------------ Test 1 --------------------------------------
-	//Newly created local Addon objects should be reflected on sunpike as ClusterAddon objects
-	//Create 6 local Addon objects
-	funcArray := []createAddon{createCoreDNS, createMetallb, createDashboard, createMetricsServer, createAWSAutoScaler, createAzureAutoScaler}
-	for _, fn := range funcArray {
-		createLocalAddons(fn)
+	//Newly created ClusterAddon objects during boostrap should be reflected as local Addon objects
+	//Create 6 local ClusterAddon objects
+	clsAddonManifests := []string{"coredns.clusteraddon", "dashboard.clusteraddon", "metallb.clusteraddon", "metric-server.clusteraddon", "cas-aws.clusteraddon", "cas-azure.clusteraddon"}
+	for _, f := range clsAddonManifests {
+		createClusterAddonFromFile(f)
 	}
 
 	//Sync between sunpike and local cluster
 	err = w.SyncClusterAddons("clusterid", "projectid", kubeCfg)
 	assert.Equal(t, nil, err)
 
-	//Verify if 6 ClusterAddon objects have been created
-	clsAddonList := &sunpikev1alpha2.ClusterAddonList{}
-	err = sunpikeClient.List(ctx, clsAddonList)
+	//Verify if 6 Addon objects have been created
+	addonList := &agentv1.AddonList{}
+	err = localClient.List(ctx, addonList)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 6, len(clsAddonList.Items))
+	assert.Equal(t, 6, len(addonList.Items))
 
 	//------------------------------ Test 2 --------------------------------------
 	//New ClusterAddon object should be reflected as local Addon object
@@ -320,7 +326,7 @@ func TestHealthCheck(t *testing.T) {
 	err = w.SyncClusterAddons("clusterid", "projectid", kubeCfg)
 	assert.Equal(t, nil, err)
 
-	//Check if local addon object has been updated
+	//Check if local addon object has been deleted
 	err = localClient.Get(ctx, key, addon)
 	assert.NotEqual(t, nil, err)
 

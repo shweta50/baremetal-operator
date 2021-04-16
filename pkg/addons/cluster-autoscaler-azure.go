@@ -1,6 +1,7 @@
 package addons
 
 import (
+	"encoding/base64"
 	"fmt"
 	"path/filepath"
 
@@ -34,14 +35,53 @@ func newAutoScalerAzure(c client.Client, version string, params map[string]inter
 	return cl
 }
 
+//overrideRegistry checks if we need to override container registry values
+func (c *AutoScalerAzureClient) overrideRegistry() {
+	c.overrideParams[templateK8sRegistry] = util.GetRegistry(envVarK8sRegistry, defaultK8sRegistry)
+	log.Infof("Using container registry: %s", c.overrideParams[templateK8sRegistry])
+}
+
 //ValidateParams validates params of an addon
 func (c *AutoScalerAzureClient) ValidateParams() (bool, error) {
-	params := []string{"clientID", "clientSecret", "resourceGroup", "subscriptionID", "tenantID", "minNumWorkers", "maxNumWorkers"}
+	params := []string{"minNumWorkers", "maxNumWorkers"}
+	azureCredsParams := []string{"clientID", "clientSecret", "resourceGroup", "subscriptionID", "tenantID"}
 
 	for _, p := range params {
 		if _, ok := c.overrideParams[p]; !ok {
 			return false, addonerr.InvalidParams(p)
 		}
+	}
+
+	//If all params specified no need to get them from addon-config
+	if len(c.overrideParams) == 7 {
+		for _, p := range azureCredsParams {
+			if _, ok := c.overrideParams[p]; !ok {
+				return false, addonerr.InvalidParams(p)
+			}
+		}
+
+		return true, nil
+	}
+
+	sec, err := util.GetSecret(addonsNS, addonsConfigSecret, c.client)
+	if err != nil {
+		log.Errorf("Failed to get addon-config secret: %s", err)
+		return false, err
+	}
+
+	if sec == nil {
+		log.Error("addon-config secret not found")
+		return false, fmt.Errorf("addon-config secret not found")
+	}
+
+	for _, p := range azureCredsParams {
+		val, ok := sec.Data[p]
+		if !ok {
+			log.Errorf("%s not found in addon-config", p)
+			return false, fmt.Errorf("%s not found in addon-config", p)
+		}
+
+		c.overrideParams[p] = base64.StdEncoding.EncodeToString(val)
 	}
 
 	return true, nil
@@ -91,6 +131,8 @@ func (c *AutoScalerAzureClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
 
+	c.overrideRegistry()
+
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
@@ -125,6 +167,8 @@ func (c *AutoScalerAzureClient) Uninstall() error {
 
 	inputFilePath := filepath.Join(inputPath, "cluster-autoscaler.yaml")
 	outputFilePath := filepath.Join(outputPath, "cluster-autoscaler.yaml")
+
+	c.overrideRegistry()
 
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "cluster-autoscaler.yaml", c.overrideParams)
 	if err != nil {

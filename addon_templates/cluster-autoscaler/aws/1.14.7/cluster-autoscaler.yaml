@@ -151,7 +151,7 @@ spec:
       serviceAccountName: cluster-autoscaler
       priorityClassName: system-cluster-critical
       containers:
-        - image: k8s.gcr.io/cluster-autoscaler:v1.14.7
+        - image: {{ .K8sRegistry }}/cluster-autoscaler:v1.14.7
           name: cluster-autoscaler
           resources:
             limits:

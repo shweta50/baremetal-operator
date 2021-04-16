@@ -35,7 +35,7 @@ func IsValidUUID(u string) bool {
 func getEnvDUFQDN() string {
 	value, exists := os.LookupEnv("DU_FQDN")
 	if !exists {
-		panic(fmt.Sprintf("DU FQDN not defined as env variable"))
+		panic(fmt.Sprintf("DU_FQDN not defined as env variable"))
 	}
 
 	return value

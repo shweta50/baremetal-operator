@@ -37,6 +37,16 @@ func newKubeDashboard(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
+//overrideRegistry checks if we need to override container registry values
+func (c *DashboardClient) overrideRegistry() {
+	overrideRegistry := util.GetRegistry(envVarDockerRegistry, defaultDockerRegistry)
+	if overrideRegistry != "" {
+		c.overrideParams[templateDockerRegistry] = overrideRegistry
+	}
+
+	log.Infof("Using container registry: %s", c.overrideParams[templateDockerRegistry])
+}
+
 //ValidateParams validates params of an addon
 func (c *DashboardClient) ValidateParams() (bool, error) {
 
@@ -84,6 +94,8 @@ func (c *DashboardClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "dashboard.yaml")
 	outputFilePath := filepath.Join(outputPath, "dashboard.yaml")
 
+	c.overrideRegistry()
+
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "dashboard.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
@@ -115,6 +127,8 @@ func (c *DashboardClient) Uninstall() error {
 
 	inputFilePath := filepath.Join(inputPath, "dashboard.yaml")
 	outputFilePath := filepath.Join(outputPath, "dashboard.yaml")
+
+	c.overrideRegistry()
 
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "dashboard.yaml", c.overrideParams)
 	if err != nil {

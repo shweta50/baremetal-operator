@@ -33,6 +33,7 @@ type AddonSpec struct {
 	Type      string   `json:"type"`
 	Override  Override `json:"override,omitempty"`
 	Watch     bool     `json:"watch,omitempty"`
+	Retry     int32    `json:"retry,omitempty"`
 }
 
 // Override defines params to override in the addon

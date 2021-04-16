@@ -8,7 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
 
@@ -39,11 +38,25 @@ func newMetalLB(c client.Client, version string, params map[string]interface{}) 
 	return cl
 }
 
+//overrideRegistry checks if we need to override container registry values
+func (c *MetallbClient) overrideRegistry() {
+	overrideRegistry := util.GetRegistry(envVarDockerRegistry, defaultDockerRegistry)
+	if overrideRegistry != "" {
+		c.overrideParams[templateDockerRegistry] = overrideRegistry
+	}
+
+	log.Infof("Using container registry: %s", c.overrideParams[templateDockerRegistry])
+}
+
+func (c *MetallbClient) useCfgMap() bool {
+	if _, ok := c.overrideParams["MetallbIpRange"]; ok {
+		return true
+	}
+	return false
+}
+
 //ValidateParams validates params of an addon
 func (c *MetallbClient) ValidateParams() (bool, error) {
-	if _, ok := c.overrideParams["MetallbIpRange"]; !ok {
-		return false, addonerr.InvalidParams("MetallbIpRange")
-	}
 	return true, nil
 }
 
@@ -86,25 +99,27 @@ func (c *MetallbClient) Install() error {
 		return err
 	}
 
-	inputFilePath := filepath.Join(inputPath, "metallb.yaml")
-	outputFilePath := filepath.Join(outputPath, "metallb.yaml")
+	c.overrideRegistry()
 
-	err = c.processIPRange()
-	if err != nil {
-		log.Errorf("Failed to process ip range for metallb: %s", err)
-		return err
+	yamlList := []string{"metallb.yaml"}
+
+	if c.useCfgMap() {
+		yamlList = append(yamlList, "cfgmap.yaml")
+
+		err = c.processIPRange()
+		if err != nil {
+			log.Errorf("Failed to process ip range for metallb: %s", err)
+			return err
+		}
 	}
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metallb.yaml", c.overrideParams)
-	if err != nil {
-		log.Errorf("Failed to write output file: %s", err)
-		return err
-	}
+	for _, y := range yamlList {
+		inputFilePath := filepath.Join(inputPath, y)
+		outputFilePath := filepath.Join(outputPath, y)
 
-	err = util.ApplyYaml(outputFilePath, c.client)
-	if err != nil {
-		log.Errorf("Failed to apply yaml file: %s", err)
-		return err
+		if err := c.install(inputFilePath, outputFilePath, y); err != nil {
+			return err
+		}
 	}
 
 	err = c.postInstall()
@@ -116,23 +131,59 @@ func (c *MetallbClient) Install() error {
 	return nil
 }
 
+func (c *MetallbClient) install(inputFilePath, outputFilePath, fileName string) error {
+
+	err := util.WriteConfigToTemplate(inputFilePath, outputFilePath, fileName, c.overrideParams)
+	if err != nil {
+		log.Errorf("Failed to write output file: %s", err)
+		return err
+	}
+
+	err = util.ApplyYaml(outputFilePath, c.client)
+	if err != nil {
+		log.Errorf("Failed to apply yaml file: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 //Uninstall removes an metallb instance
 func (c *MetallbClient) Uninstall() error {
+
 	inputPath, outputPath, err := util.EnsureDirStructure(metallbDir, c.version)
 	if err != nil {
 		return err
 	}
 
-	inputFilePath := filepath.Join(inputPath, "metallb.yaml")
-	outputFilePath := filepath.Join(outputPath, "metallb.yaml")
+	c.overrideRegistry()
 
-	err = c.processIPRange()
-	if err != nil {
-		log.Errorf("Failed to process ip range for metallb: %s", err)
-		return err
+	yamlList := []string{"metallb.yaml"}
+
+	if c.useCfgMap() {
+		yamlList = append(yamlList, "cfgmap.yaml")
+
+		err = c.processIPRange()
+		if err != nil {
+			log.Errorf("Failed to process ip range for metallb: %s", err)
+			return err
+		}
 	}
 
-	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metallb.yaml", c.overrideParams)
+	for _, y := range yamlList {
+		inputFilePath := filepath.Join(inputPath, y)
+		outputFilePath := filepath.Join(outputPath, y)
+
+		if err := c.uninstall(inputFilePath, outputFilePath, y); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *MetallbClient) uninstall(inputFilePath, outputFilePath, fileName string) error {
+
+	err := util.WriteConfigToTemplate(inputFilePath, outputFilePath, fileName, c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
 		return err

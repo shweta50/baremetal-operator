@@ -29,6 +29,15 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+//GetRegistry gets the override registry value or the default one
+func GetRegistry(envVar, defaultValue string) string {
+	registry := os.Getenv(envVar)
+	if registry == "" {
+		registry = defaultValue
+	}
+	return registry
+}
+
 //EnsureDirStructure ensures expected dir structure
 func EnsureDirStructure(name, version string) (string, string, error) {
 
@@ -64,7 +73,10 @@ func GetOverrideParams(addon *agentv1.Addon) (map[string]interface{}, error) {
 	for _, p := range addon.Spec.Override.Params {
 		log.Debugf("Adding param %s:%s", p.Name, p.Value)
 		if strings.HasPrefix(p.Name, "base64Enc") {
-			b, _ := base64.StdEncoding.DecodeString(p.Value)
+			b, err := base64.StdEncoding.DecodeString(p.Value)
+			if err != nil {
+				return nil, err
+			}
 			p.Value = string(b)
 			log.Debugf("Decoded param %s:%s", p.Name, p.Value)
 		}

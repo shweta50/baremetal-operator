@@ -32,6 +32,12 @@ func newMetricsServer(c client.Client, version string, params map[string]interfa
 	return cl
 }
 
+//overrideRegistry checks if we need to override container registry values
+func (c *MetricsServerClient) overrideRegistry() {
+	c.overrideParams[templateK8sRegistry] = util.GetRegistry(envVarK8sRegistry, defaultK8sRegistry)
+	log.Infof("Using container registry: %s", c.overrideParams[templateK8sRegistry])
+}
+
 //ValidateParams validates params of an addon
 func (c *MetricsServerClient) ValidateParams() (bool, error) {
 
@@ -74,6 +80,8 @@ func (c *MetricsServerClient) Install() error {
 	inputFilePath := filepath.Join(inputPath, "metrics-server.yaml")
 	outputFilePath := filepath.Join(outputPath, "metrics-server.yaml")
 
+	c.overrideRegistry()
+
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metrics-server.yaml", c.overrideParams)
 	if err != nil {
 		log.Errorf("Failed to write output file: %s", err)
@@ -98,6 +106,8 @@ func (c *MetricsServerClient) Uninstall() error {
 
 	inputFilePath := filepath.Join(inputPath, "metrics-server.yaml")
 	outputFilePath := filepath.Join(outputPath, "metrics-server.yaml")
+
+	c.overrideRegistry()
 
 	err = util.WriteConfigToTemplate(inputFilePath, outputFilePath, "metrics-server.yaml", c.overrideParams)
 	if err != nil {

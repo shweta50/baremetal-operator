@@ -180,7 +180,11 @@ spec:
         k8s-app: dashboard-metrics-scraper
     spec:
       containers:
+{{- if .DockerRegistry }}
+      - image: {{ .DockerRegistry }}/kubernetesui/metrics-scraper:v1.0.4
+{{- else }}
       - image: kubernetesui/metrics-scraper:v1.0.4
+{{- end }}
         livenessProbe:
           httpGet:
             path: /
@@ -241,7 +245,11 @@ spec:
         - --tls-cert-file=dashboard.crt
         - --tls-key-file=dashboard.key
         - --namespace=kubernetes-dashboard
+{{- if .DockerRegistry }}
+        image: {{ .DockerRegistry }}/kubernetesui/dashboard:v2.0.1
+{{- else }}
         image: kubernetesui/dashboard:v2.0.1
+{{- end }}
         livenessProbe:
           httpGet:
             path: /

@@ -14,7 +14,5 @@ spec:
       value: __DNS_MEMORY_LIMIT__
     - name: dnsDomain
       value: __DNS_DOMAIN__
-    - name: dnsServer
-      value: __DNS_SERVER__
     - name: enableAdditionalDnsConfig
       value: "false"
