@@ -1,7 +1,6 @@
 package addons
 
 import (
-	"encoding/base64"
 	"fmt"
 	"path/filepath"
 
@@ -81,7 +80,7 @@ func (c *AutoScalerAzureClient) ValidateParams() (bool, error) {
 			return false, fmt.Errorf("%s not found in addon-config", p)
 		}
 
-		c.overrideParams[p] = base64.StdEncoding.EncodeToString(val)
+		c.overrideParams[p] = string(val)
 	}
 
 	return true, nil
