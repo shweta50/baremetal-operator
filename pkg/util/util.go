@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -29,6 +30,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+const (
+	certPath = "/usr/local/share/ca-certificates/cert.pem"
+)
+
 //GetRegistry gets the override registry value or the default one
 func GetRegistry(envVar, defaultValue string) string {
 	registry := os.Getenv(envVar)
@@ -36,6 +41,31 @@ func GetRegistry(envVar, defaultValue string) string {
 		registry = defaultValue
 	}
 	return registry
+}
+
+//UpdateCACerts updates ca-cert of the DU
+func UpdateCACerts() error {
+
+	_, err := os.Stat(certPath)
+	if os.IsNotExist(err) {
+		log.Errorf("certPath not found ignoring ca certs: %s", err)
+		return nil
+	}
+
+	cmd := exec.Command("update-ca-certificates")
+	var errb, outb bytes.Buffer
+	cmd.Stderr = &errb
+	cmd.Stdout = &outb
+
+	cmd.Start()
+
+	if err := cmd.Wait(); err != nil {
+		output := errb.String() + outb.String()
+		log.Errorf("Error updating ca certs %s", output)
+		return err
+	}
+
+	return nil
 }
 
 //EnsureDirStructure ensures expected dir structure

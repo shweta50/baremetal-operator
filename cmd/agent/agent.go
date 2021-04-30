@@ -23,6 +23,7 @@ import (
 	"github.com/platform9/pf9-addon-operator/controllers"
 	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	"github.com/platform9/pf9-addon-operator/pkg/token"
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -46,6 +47,11 @@ func main() {
 	flag.Parse()
 	log.SetFormatter(&log.JSONFormatter{})
 	setLogLevel()
+	log.Info("Running update ca certs")
+	if err := util.UpdateCACerts(); err != nil {
+		log.Error(err, " running update ca certs")
+		os.Exit(1)
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
