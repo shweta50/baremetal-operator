@@ -3,6 +3,7 @@ package addons
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,10 +13,12 @@ import (
 )
 
 const (
-	corednsNS     = "kube-system"
-	corednsSecret = "memberlist"
-	dnsDir        = "coredns"
-	corednsDeploy = "coredns"
+	corednsNS         = "kube-system"
+	corednsSecret     = "memberlist"
+	dnsDir            = "coredns"
+	corednsDeploy     = "coredns"
+	corednsRetryCount = 3
+	corednsRetrySleep = 30
 )
 
 // CoreDNSClient represents implementation for interacting with plain K8s cluster
@@ -107,6 +110,23 @@ func (c *CoreDNSClient) Upgrade() error {
 
 //Install installs an coredns instance
 func (c *CoreDNSClient) Install() error {
+	var err error
+	// CoreDNS is a critical addon, it's installation should be retried a few times before giving up,
+	// other addons can error out in the first attempt and can retried again from the UI
+	// Retries for coredns might be most relevant when there is a transient issue during bootstrap, (etcd not available)
+	// where a retry will be useful, otherwise if coredns does not come up, the cluster will not be useful
+	for i := 0; i < corednsRetryCount; i++ {
+		if err = c.install(); err == nil {
+			return nil
+		}
+
+		log.Errorf("Error installing coredns: %s, count: %d or %d", err, i+1, corednsRetryCount)
+		time.Sleep(time.Duration(corednsRetrySleep) * time.Second)
+	}
+	return err
+}
+
+func (c *CoreDNSClient) install() error {
 	inputPath, outputPath, err := util.EnsureDirStructure(dnsDir, c.version)
 	if err != nil {
 		return err
