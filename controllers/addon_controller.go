@@ -61,17 +61,9 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	if err := w.SyncEvent(&addon, operation); err != nil {
+	syncErr := w.SyncEvent(&addon, operation)
+	if syncErr != nil {
 		log.Error(err, "unable to process addon")
-
-		addon.Status.ObservedGeneration = addon.ObjectMeta.Generation
-		err = r.Status().Update(ctx, &addon)
-		if err != nil {
-			log.Error(err, "Unable to update status of Addons object")
-			return ctrl.Result{}, err
-		}
-
-		return addonerr.ProcessError(err)
 	}
 
 	addon.Status.ObservedGeneration = addon.ObjectMeta.Generation
@@ -81,18 +73,23 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
-	//If finalizer is removed in k8s.install it is not removed after above
-	//status update call, need to remove it after updating status, only then
-	//it is removed from the Addon spec
-	setFinalizer(&addon, operation)
+	// Finalizer should be added even if installation fails, otherwise when the Addon object is deleted,
+	// cleanup does not happen correctly. Since the finalizer is not present, the object is deleted
+	// right away and we cannot get the spec in the Reconcile loop post delete. Deletion anyways ignores
+	// those resources which are not present, so cleaning up a partially installed Addon is not an issue
+	if !(operation == "uninstall" && syncErr != nil) {
+		log.Infof("Updating finalizer for addon: %s", addon.Name)
+		setFinalizer(&addon, operation)
+	}
 
 	err = r.Update(ctx, &addon)
 	if err != nil {
 		log.Error(err, "Unable to update Addons object")
 		return ctrl.Result{}, err
 	}
+	log.Infof("Updated addon: %s", addon.Name)
 
-	return ctrl.Result{}, nil
+	return addonerr.ProcessError(syncErr)
 }
 
 //SetupWithManager function
@@ -105,8 +102,10 @@ func (r *AddonReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func setFinalizer(addon *agentv1.Addon, operation string) {
 	switch operation {
 	case "install":
+		log.Infof("Adding finalizer for addon: %s", addon.Name)
 		addon.ObjectMeta.Finalizers = []string{"addons.pf9.io"}
 	case "uninstall":
+		log.Infof("Removing finalizer for addon: %s", addon.Name)
 		addon.ObjectMeta.Finalizers = []string{}
 	}
 }

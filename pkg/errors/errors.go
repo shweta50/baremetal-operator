@@ -95,6 +95,10 @@ func IsNotAuthorized(e error) bool {
 //ProcessError returns an error for the Reconcile loop
 func ProcessError(e error) (ctrl.Result, error) {
 
+	if e == nil {
+		return ctrl.Result{}, nil
+	}
+
 	ae, ok := IsAddonError(e)
 	if !ok {
 		return ctrl.Result{}, e
