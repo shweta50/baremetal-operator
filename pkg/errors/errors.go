@@ -11,6 +11,8 @@ const (
 	ErrInvalidParameters = 1
 	// ErrUnauthorized indicates not authorized
 	ErrUnauthorized = 4
+	// ErrListClusterAddons indicates error listing ClusterAddon objects from sunpike
+	ErrListClusterAddons = 5
 )
 
 // AddonError represents application errors for Addon
@@ -47,6 +49,25 @@ func InvalidParams(msg string) AddonError {
 func IsInvalidParams(e error) bool {
 	ae, ok := e.(AddonError)
 	if ok && ae.Code == ErrInvalidParameters {
+		return true
+	}
+
+	return false
+}
+
+// ListClusterAddons returns error of sunpike not reachable
+func ListClusterAddons() AddonError {
+	return AddonError{
+		Code:    ErrListClusterAddons,
+		Reason:  "Error listing ClusterAddon objects from sunpike",
+		Requeue: false,
+	}
+}
+
+// IsListClusterAddons checks if error is of type ErrListClusterAddons
+func IsListClusterAddons(e error) bool {
+	ae, ok := e.(AddonError)
+	if ok && ae.Code == ErrListClusterAddons {
 		return true
 	}
 

@@ -61,6 +61,11 @@ func GetSunpikeKubeCfg(token, clusterID, project string) (*rest.Config, error) {
 		log.Errorf("Failed to get write kubecfg: %s", err)
 		return nil, err
 	}
+
+	// If network is down the default config created here will block for a few minutes
+	// while trying to list ClusterAddon objects from sunpike. We can explicitly specify
+	// a timeout in case du_fqdn is not reachable using clientcmd.ConfigOverrides,
+	// but that was not felt necessary, see PMK-3821 for details
 	cfg, err := clientcmd.BuildConfigFromFlags("", kubeCfgPath)
 	if err != nil {
 		return nil, err

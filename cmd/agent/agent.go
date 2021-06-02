@@ -22,6 +22,7 @@ import (
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/controllers"
 	"github.com/platform9/pf9-addon-operator/pkg/addons"
+	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
 	"github.com/platform9/pf9-addon-operator/pkg/token"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 	// +kubebuilder:scaffold:imports
@@ -30,6 +31,10 @@ import (
 var (
 	scheme = runtime.NewScheme()
 	//setupLog = ctrl.Log.WithName("setup")
+)
+
+const (
+	maxClusterAddonErrCount = 10
 )
 
 func init() {
@@ -133,10 +138,26 @@ func healthCheck() {
 		log.Error(err, "while processing package")
 		panic("Cannot create client")
 	}
+	errCount := 0
 
 	for {
 		if err := w.HealthCheck(clusterID, projectID); err != nil {
-			log.Error(err, "unable to health check addons")
+			log.Errorf("Error in healthcheck: %s", err)
+
+			// In case there is an error reaching the du_fqdn then maintain a count
+			// beyond which restart the pod, normally client-go works even if the network
+			// goes away for a while and is restored, but in some special cases we had
+			// to ensure pod restart, see: PMK-3821
+			if addonerr.IsListClusterAddons(err) {
+				errCount++
+
+				log.Errorf("List ClusterAddons error count: %d of %d", errCount, maxClusterAddonErrCount)
+				if errCount > maxClusterAddonErrCount {
+					panic("Error listing ClusterAddon objects from sunpike")
+				}
+			}
+		} else {
+			errCount = 0
 		}
 		time.Sleep(time.Duration(healthCheckInterval) * time.Second)
 	}

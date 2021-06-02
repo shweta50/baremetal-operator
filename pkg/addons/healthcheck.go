@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
+	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
 	"github.com/platform9/pf9-addon-operator/pkg/token"
 	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 	clientset "github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/generated/clientset/versioned"
@@ -57,7 +58,7 @@ func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectI
 	clsAddonList, err := sunpikeClient.SunpikeV1alpha2().ClusterAddons(sunpikeNs).List(w.ctx, listOptions)
 	if err != nil {
 		log.Error(err, "Unable to list ClusterAddons")
-		return mapClsAddon, err
+		return mapClsAddon, addonerr.ListClusterAddons()
 	}
 
 	for _, clsAddon := range clsAddonList.Items {
