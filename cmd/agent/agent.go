@@ -6,6 +6,7 @@ package main
  */
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -25,6 +27,7 @@ import (
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
 	"github.com/platform9/pf9-addon-operator/pkg/token"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
+	"github.com/platform9/pf9-addon-operator/pkg/watch"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -78,8 +81,13 @@ func main() {
 		log.Error(err, "unable to create controller")
 		os.Exit(1)
 	}
+
 	// +kubebuilder:scaffold:builder
 	go healthCheck()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg, ctx := errgroup.WithContext(ctx)
+	wg.Go(func() error { return watchResources(ctx, ctx.Done()) })
 
 	/*
 		TODO: These APIs will soon be required for listing addons available for install
@@ -102,6 +110,11 @@ func main() {
 		log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+
+	cancel()
+	if err := wg.Wait(); err != nil {
+		log.Error(err, "while waiting for watchers to terminate....")
+	}
 }
 
 func setLogLevel() {
@@ -118,6 +131,31 @@ func setLogLevel() {
 	default:
 		panic(fmt.Sprintf("Invalid log level: %s", lvl))
 	}
+}
+
+// watchResources will start a watch on all resources deployed by the operator.
+// If any of those resources are manually changed, they are brought back to the original configuration.
+func watchResources(ctx context.Context, stopc <-chan struct{}) error {
+
+	// Wait for a while before starting watch on resources,
+	// during bootstrap all addons deployed by the operator, we want to avoid those notifications
+	time.Sleep(90 * time.Second)
+	log.Info("Starting watch controller...")
+	cl, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
+	if err != nil {
+		panic(fmt.Sprintf("Error creating client for watchResources: %s", err))
+	}
+
+	w, err := watch.New(ctx, cl)
+	if err != nil {
+		log.Error(err, "while creating watch")
+		panic("Cannot create watch")
+	}
+
+	if err := w.Run(stopc); err != nil {
+		log.Error(err, "unable to start watch")
+	}
+	return nil
 }
 
 func healthCheck() {

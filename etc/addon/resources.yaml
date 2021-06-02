@@ -1,0 +1,20 @@
+resources:
+  deployment/kube-system/coredns: coredns
+  configmap/kube-system/coredns: coredns
+  service/kube-system/kube-dns: coredns
+  deployment/kube-system/cluster-autoscaler: cluster-auto-scaler-aws
+  configmap/kube-system/cluster-autoscaler-priority-expander: cluster-auto-scaler-aws
+  deployment/kube-system/cluster-autoscaler: cluster-auto-scaler-azure
+  secret/kube-system/cluster-autoscaler-azure: cluster-auto-scaler-azure
+  deployment/kubernetes-dashboard/dashboard-metrics-scraper: kubernetes-dashboard
+  deployment/kubernetes-dashboard/kubernetes-dashboard: kubernetes-dashboard
+  secret/kubernetes-dashboard/kubernetes-dashboard-csrf: kubernetes-dashboard
+  service/kubernetes-dashboard/dashboard-metrics-scraper: kubernetes-dashboard
+  service/kubernetes-dashboard/kubernetes-dashboard: kubernetes-dashboard
+  daemonset/metallb-system/speaker: metallb
+  deployment/metallb-system/controller: metallb
+  configmap/metallb-system/config: metallb
+  service/metallb-system/kube-dns: metallb
+  deployment/kube-system/metrics-server-v0.3.6: metrics-server
+  configmap/kube-system/metrics-server-config: metrics-server
+  service/kube-system/metrics-server: metrics-server
