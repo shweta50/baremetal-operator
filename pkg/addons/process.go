@@ -155,7 +155,7 @@ func renderYaml(kdir string, vals map[string]interface{}) (string, error) {
 }
 
 //InstallPkg installs addon pkg
-func (w *Watcher) InstallPkg(addon *agentv1.Addon) error {
+func (w *AddonClient) InstallPkg(addon *agentv1.Addon) error {
 	pkgname := addon.Name + "-" + addon.Spec.Version
 	log.Infof("Installing pkg: %s", pkgname)
 
@@ -182,7 +182,7 @@ func (w *Watcher) InstallPkg(addon *agentv1.Addon) error {
 }
 
 //UninstallPkg uninstalls kudo pkg
-func (w *Watcher) UninstallPkg(addon *agentv1.Addon) error {
+func (w *AddonClient) UninstallPkg(addon *agentv1.Addon) error {
 	pkgname := addon.Name + "-" + addon.Spec.Version
 	log.Infof("UnInstalling pkg: %s", pkgname)
 
@@ -204,7 +204,7 @@ func (w *Watcher) UninstallPkg(addon *agentv1.Addon) error {
 }
 
 //UpgradePkg upgrades kudo pkg
-func (w *Watcher) UpgradePkg(addon *agentv1.Addon) error {
+func (w *AddonClient) UpgradePkg(addon *agentv1.Addon) error {
 	pkgname := addon.Name + "-" + addon.Spec.Version
 	log.Infof("Upgrading pkg: %s", pkgname)
 
@@ -238,7 +238,7 @@ func getKubeCmd() string {
 	return "kubectl"
 }
 
-func (w *Watcher) installPkg(text string, addon *agentv1.Addon) error {
+func (w *AddonClient) installPkg(text string, addon *agentv1.Addon) error {
 
 	resourceList := []*unstructured.Unstructured{}
 	decoder := apiyaml.NewYAMLOrJSONDecoder(bytes.NewReader([]byte(text)), 4096)

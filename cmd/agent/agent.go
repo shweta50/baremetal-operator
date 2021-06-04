@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -25,7 +24,6 @@ import (
 	"github.com/platform9/pf9-addon-operator/controllers"
 	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
-	"github.com/platform9/pf9-addon-operator/pkg/token"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 	"github.com/platform9/pf9-addon-operator/pkg/watch"
 	// +kubebuilder:scaffold:imports
@@ -34,10 +32,6 @@ import (
 var (
 	scheme = runtime.NewScheme()
 	//setupLog = ctrl.Log.WithName("setup")
-)
-
-const (
-	maxClusterAddonErrCount = 10
 )
 
 func init() {
@@ -54,7 +48,11 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 	log.SetFormatter(&log.JSONFormatter{})
+
 	setLogLevel()
+
+	util.CheckEnvVarsOnBootup()
+
 	log.Info("Running update ca certs")
 	if err := util.UpdateCACerts(); err != nil {
 		log.Error(err, " running update ca certs")
@@ -89,23 +87,7 @@ func main() {
 	wg, ctx := errgroup.WithContext(ctx)
 	wg.Go(func() error { return watchResources(ctx, ctx.Done()) })
 
-	/*
-		TODO: These APIs will soon be required for listing addons available for install
-		and version upgrades available for each addon. The following is sample legacy code
-		which was added in the previous design.
-
-		http.HandleFunc("/v1/availableaddons", func(w http.ResponseWriter, req *http.Request) {
-			api.AvailableAddons(w, req)
-		})
-
-		http.HandleFunc("/v1/status", func(w http.ResponseWriter, req *http.Request) {
-			api.Status(w, req)
-		})
-
-		go http.ListenAndServe("0.0.0.0:8090", nil)
-	*/
-
-	log.Info("starting manager")
+	log.Info("Starting manager...")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		log.Error(err, "problem running manager")
 		os.Exit(1)
@@ -115,6 +97,7 @@ func main() {
 	if err := wg.Wait(); err != nil {
 		log.Error(err, "while waiting for watchers to terminate....")
 	}
+	log.Info("Exiting gracefully...")
 }
 
 func setLogLevel() {
@@ -140,6 +123,7 @@ func watchResources(ctx context.Context, stopc <-chan struct{}) error {
 	// Wait for a while before starting watch on resources,
 	// during bootstrap all addons deployed by the operator, we want to avoid those notifications
 	time.Sleep(90 * time.Second)
+
 	log.Info("Starting watch controller...")
 	cl, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
 	if err != nil {
@@ -165,11 +149,17 @@ func healthCheck() {
 		panic(fmt.Sprintf("Error creating client for healthcheck: %s", err))
 	}
 
+	// Wait for a few secs, to allow the cluster to settle down, this is relevant esp during bootstrap
+	// when all components are not yet up, it doesn't matter if this value is too less and the sync fails
+	// it will keep on trying every healthCheckInterval secs till the values converge
 	time.Sleep(30 * time.Second)
 
-	healthCheckInterval, _ := getEnvInt("HEALTHCHECK_INTERVAL_SECS", "150")
-	clusterID := getEnvUUID("CLUSTER_ID")
-	projectID := getEnvUUID("PROJECT_ID")
+	log.Info("Starting sunpike sync...")
+	healthCheckInterval := util.GetHealthCheckSleep()
+	maxSyncErrCount := util.GetSyncErrorCount()
+
+	clusterID := os.Getenv(util.ClusterIDEnvVar)
+	projectID := os.Getenv(util.ProjectIDEnvVar)
 
 	w, err := addons.New(cl)
 	if err != nil {
@@ -189,8 +179,8 @@ func healthCheck() {
 			if addonerr.IsListClusterAddons(err) {
 				errCount++
 
-				log.Errorf("List ClusterAddons error count: %d of %d", errCount, maxClusterAddonErrCount)
-				if errCount > maxClusterAddonErrCount {
+				log.Errorf("List ClusterAddons error count: %d of %d", errCount, maxSyncErrCount)
+				if errCount > maxSyncErrCount {
 					panic("Error listing ClusterAddon objects from sunpike")
 				}
 			}
@@ -199,26 +189,4 @@ func healthCheck() {
 		}
 		time.Sleep(time.Duration(healthCheckInterval) * time.Second)
 	}
-}
-
-func getEnvInt(env, def string) (int, error) {
-	value, exists := os.LookupEnv(env)
-	if !exists {
-		value = def
-	}
-
-	return strconv.Atoi(value)
-}
-
-func getEnvUUID(env string) string {
-	value, exists := os.LookupEnv(env)
-	if !exists {
-		panic(fmt.Sprintf("%s not defined as env variable", env))
-	}
-
-	if !token.IsValidUUID(value) {
-		panic(fmt.Sprintf("Invalid UUID: %s", env))
-	}
-
-	return value
 }

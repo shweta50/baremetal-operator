@@ -12,10 +12,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +34,118 @@ import (
 
 const (
 	certPath = "/usr/local/share/ca-certificates/cert.pem"
+
+	// ClusterIDEnvVar ClusterID of the cluster
+	ClusterIDEnvVar = "CLUSTER_ID"
+	// ProjectIDEnvVar ProjectID of the cluster
+	ProjectIDEnvVar = "PROJECT_ID"
+	// CloudProviderTypeEnvVar Cloud Provider type of the cluster
+	CloudProviderTypeEnvVar = "CLOUD_PROVIDER_TYPE"
+
+	healthCheckSleepEnvVar  = "HEALTHCHECK_INTERVAL_SECS"
+	healthCheckSleepDefault = "150"
+
+	// DisableSunpikeEnvVar Disable sunpike sync
+	DisableSunpikeEnvVar = "DISABLE_SUNPIKE_SYNC"
+	// DisableSunpikeVal value used to disable sync
+	DisableSunpikeVal = "true"
+
+	watchSleepEnvVar  = "WATCH_SLEEP_SECS"
+	watchSleepDefault = "60"
+
+	watchAddonChangeEnvVar  = "WATCH_ADDON_CHANGE_SECS"
+	watchAddonChangeDefault = "20"
+
+	maxSyncErrorCountEnvVar  = "MAX_SYNC_ERR_COUNT"
+	maxSyncErrorCountDefault = "10"
+
+	// DuFqdnEnvVar DU FQDN
+	DuFqdnEnvVar = "DU_FQDN"
 )
+
+// CheckEnvVarsOnBootup checks all env variables and their format on startup
+func CheckEnvVarsOnBootup() {
+	var err error
+
+	if err = getEnvUUID(ClusterIDEnvVar); err != nil {
+		panic(err)
+	}
+
+	if err = getEnvUUID(ProjectIDEnvVar); err != nil {
+		panic(err)
+	}
+
+	if _, err = getEnvInt(healthCheckSleepEnvVar, healthCheckSleepDefault); err != nil {
+		panic(err)
+	}
+
+	if _, err = getEnvInt(watchSleepEnvVar, watchSleepDefault); err != nil {
+		panic(err)
+	}
+
+	if _, err = getEnvInt(watchAddonChangeEnvVar, watchAddonChangeDefault); err != nil {
+		panic(err)
+	}
+
+	if _, err = getEnvInt(maxSyncErrorCountEnvVar, maxSyncErrorCountDefault); err != nil {
+		panic(err)
+	}
+
+	if duFqdn := os.Getenv(DuFqdnEnvVar); duFqdn == "" {
+		panic(fmt.Sprintf("%s not defined as env variable", DuFqdnEnvVar))
+	}
+}
+
+// GetHealthCheckSleep gets sleep val for health check loop
+func GetHealthCheckSleep() int {
+	val, _ := getEnvInt(healthCheckSleepEnvVar, healthCheckSleepDefault)
+	return val
+}
+
+// GetWatchSleep gets sleep val for watch loop
+func GetWatchSleep() int {
+	val, _ := getEnvInt(watchSleepEnvVar, watchSleepDefault)
+	return val
+}
+
+// GetWatchAddonChangeInterval gets addon change interval
+func GetWatchAddonChangeInterval() int64 {
+	val, _ := getEnvInt(watchAddonChangeEnvVar, watchAddonChangeDefault)
+	return int64(val)
+}
+
+// GetSyncErrorCount gets max sync error count
+func GetSyncErrorCount() int {
+	val, _ := getEnvInt(maxSyncErrorCountEnvVar, maxSyncErrorCountDefault)
+	return val
+}
+
+func getEnvInt(env, def string) (int, error) {
+	value, exists := os.LookupEnv(env)
+	if !exists {
+		value = def
+	}
+
+	return strconv.Atoi(value)
+}
+
+func getEnvUUID(env string) error {
+	value, exists := os.LookupEnv(env)
+	if !exists {
+		return fmt.Errorf("%s not defined as env variable", env)
+	}
+
+	if !isValidUUID(value) {
+		return fmt.Errorf("Invalid UUID: %s", env)
+	}
+
+	return nil
+}
+
+func isValidUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
+}
 
 //GetRegistry gets the override registry value or the default one
 func GetRegistry(envVar, defaultValue string) string {

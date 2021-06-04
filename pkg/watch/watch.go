@@ -25,19 +25,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
 
 const (
-	resourceFile = "/etc/addon/resources.yaml"
+	resourceFile      = "/etc/addon/resources.yaml"
+	clusterAutoScaler = "cluster-auto-scaler"
 )
 
-var clusterID string
+var clusterID, cloudProviderType string
 var addonDetails map[string]int64
 var lock sync.Mutex
 
 func init() {
 	// clusterID is required to query the addon object of name: <clsuuid>-<addon type>
-	clusterID = os.Getenv("CLUSTER_ID")
+	clusterID = os.Getenv(util.ClusterIDEnvVar)
+	cloudProviderType = os.Getenv(util.CloudProviderTypeEnvVar)
 	addonDetails = map[string]int64{}
 	lock = sync.Mutex{}
 }
@@ -56,12 +60,11 @@ type Watch struct {
 	updatedRes              map[string]bool
 	checkRes                map[string]string
 	lock                    sync.RWMutex
-	watchIntervalSecs       int
 	addonChangeIntervalSecs int64
 }
 
-// WatchConfig is a map of resources we are expected to watch
-type WatchConfig struct {
+// Config is a map of resources we are expected to watch
+type Config struct {
 	Resources map[string]string `yaml:"resources"`
 }
 
@@ -202,13 +205,12 @@ func New(ctx context.Context, cl client.Client) (*Watch, error) {
 		updatedRes:              map[string]bool{},
 		checkRes:                checkRes,
 		lock:                    sync.RWMutex{},
-		watchIntervalSecs:       35,
-		addonChangeIntervalSecs: 15,
+		addonChangeIntervalSecs: util.GetWatchAddonChangeInterval(),
 	}, nil
 }
 
 func readResourcesFile() (map[string]string, error) {
-	watchConfig := WatchConfig{}
+	config := Config{}
 
 	content, err := ioutil.ReadFile(resourceFile)
 	if err != nil {
@@ -216,11 +218,11 @@ func readResourcesFile() (map[string]string, error) {
 		return nil, err
 	}
 
-	if err = yaml.Unmarshal(content, &watchConfig); err != nil {
+	if err = yaml.Unmarshal(content, &config); err != nil {
 		return nil, err
 	}
 
-	return watchConfig.Resources, nil
+	return config.Resources, nil
 }
 
 // Run starts sync workers
@@ -265,6 +267,10 @@ func (w *Watch) addResource(key string) {
 		return
 	}
 
+	if addonType == clusterAutoScaler {
+		addonType = addonType + "-" + cloudProviderType
+	}
+
 	lock.Lock()
 	// Has this resources been recently updated by the Addon operator
 	ts, ok := addonDetails[addonType]
@@ -300,9 +306,11 @@ func (w *Watch) enqueue(obj interface{}) {
 
 func (w *Watch) worker() {
 
+	watchSleepSecs := util.GetWatchSleep()
+
 	for {
 
-		time.Sleep(time.Duration(w.watchIntervalSecs) * time.Second)
+		time.Sleep(time.Duration(watchSleepSecs) * time.Second)
 
 		if len(w.updatedRes) == 0 {
 			continue
@@ -479,6 +487,15 @@ func (w *Watch) handleServiceUpdate(obj interface{}) {
 }
 
 func (w *Watch) updateAddon(addonType string) {
+
+	if addonType == clusterAutoScaler {
+		if cloudProviderType != "aws" && cloudProviderType != "azure" {
+			log.Errorf("Invalid cloud provider type: %s found", cloudProviderType)
+			return
+		}
+
+		addonType = addonType + "-" + cloudProviderType
+	}
 
 	ctx := context.Background()
 	addon := &agentv1.Addon{}

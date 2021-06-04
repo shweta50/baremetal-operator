@@ -1,14 +1,13 @@
 package token
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/google/uuid"
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -19,30 +18,15 @@ const (
 	kubeCfgTemplate = "/etc/addon/keystone.kubeconfig.template"
 )
 
-var duFqdn = getEnvDUFQDN()
-
 type JWTClaims struct {
 	Foo string `json:"foo"`
 	jwt.StandardClaims
 }
 
-//IsValidUUID check is the passed string is a valid UUID
-func IsValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
-}
-
-func getEnvDUFQDN() string {
-	value, exists := os.LookupEnv("DU_FQDN")
-	if !exists {
-		panic(fmt.Sprintf("DU_FQDN not defined as env variable"))
-	}
-
-	return value
-}
-
 //GetSunpikeKubeCfg gets sunpike kubecfg for a specific cluster
 func GetSunpikeKubeCfg(token, clusterID, project string) (*rest.Config, error) {
+
+	duFqdn := os.Getenv(util.DuFqdnEnvVar)
 
 	data, err := ioutil.ReadFile(kubeCfgTemplate)
 	if err != nil {

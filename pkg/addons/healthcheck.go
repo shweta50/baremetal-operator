@@ -31,6 +31,8 @@ import (
 	"github.com/platform9/pf9-addon-operator/pkg/token"
 	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 	clientset "github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/generated/clientset/versioned"
+
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
 
 const (
@@ -38,9 +40,9 @@ const (
 	sunpikeNs           = "default"
 )
 
-var disableSync = os.Getenv("DISABLE_SUNPIKE_SYNC")
+var disableSync = os.Getenv(util.DisableSunpikeEnvVar)
 
-func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectID string) (map[string]v1alpha2.ClusterAddon, error) {
+func (w *AddonClient) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectID string) (map[string]v1alpha2.ClusterAddon, error) {
 
 	//Get all ClusterAddon objects from sunpike and store in a map
 	mapClsAddon := map[string]v1alpha2.ClusterAddon{}
@@ -69,7 +71,7 @@ func (w *Watcher) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectI
 	return mapClsAddon, nil
 }
 
-func (w *Watcher) getAddons() (map[string]agentv1.Addon, error) {
+func (w *AddonClient) getAddons() (map[string]agentv1.Addon, error) {
 
 	//Get all Addon objects from local cluster and store in a map
 	mapAddon := map[string]agentv1.Addon{}
@@ -163,13 +165,13 @@ func convertToAddon(clsAddon *v1alpha2.ClusterAddon) agentv1.Addon {
 }
 
 //HealthCheck checks health of all installed addons
-func (w *Watcher) HealthCheck(clusterID, projectID string) error {
+func (w *AddonClient) HealthCheck(clusterID, projectID string) error {
 
 	if err := w.updateHealth(); err != nil {
 		return err
 	}
 
-	if disableSync == "true" {
+	if disableSync == util.DisableSunpikeVal {
 		return nil
 	}
 
@@ -193,7 +195,7 @@ func (w *Watcher) HealthCheck(clusterID, projectID string) error {
 }
 
 //SyncClusterAddons will sync the state of ClusterAddon objects on sunpike with local Addon objects
-func (w *Watcher) SyncClusterAddons(clusterID, projectID string, kubeCfg *rest.Config) error {
+func (w *AddonClient) SyncClusterAddons(clusterID, projectID string, kubeCfg *rest.Config) error {
 
 	//Store ClusterAddon objects in a map
 	mapClsAddon, err := w.getAddonsFromSunpike(kubeCfg, clusterID, projectID)
@@ -227,7 +229,7 @@ func (w *Watcher) SyncClusterAddons(clusterID, projectID string, kubeCfg *rest.C
 	return nil
 }
 
-func (w *Watcher) processLocalAddon(kubeCfg *rest.Config, localAddon *agentv1.Addon, clsAddon *v1alpha2.ClusterAddon, clsAddonFound bool) error {
+func (w *AddonClient) processLocalAddon(kubeCfg *rest.Config, localAddon *agentv1.Addon, clsAddon *v1alpha2.ClusterAddon, clsAddonFound bool) error {
 
 	if clsAddonFound {
 		//Did not use reflect.DeepEqual because we are comparing two different objects
@@ -251,7 +253,7 @@ func (w *Watcher) processLocalAddon(kubeCfg *rest.Config, localAddon *agentv1.Ad
 	return nil
 }
 
-func (w *Watcher) createSunpikeAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon) error {
+func (w *AddonClient) createSunpikeAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon) error {
 	// Create Sunpike client
 	sunpikeClient, err := clientset.NewForConfig(kubeCfg)
 	if err != nil {
@@ -267,7 +269,7 @@ func (w *Watcher) createSunpikeAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.Cl
 	return nil
 }
 
-func (w *Watcher) updateSunpikeStatus(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon) error {
+func (w *AddonClient) updateSunpikeStatus(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon) error {
 	// Create Sunpike client
 	sunpikeClient, err := clientset.NewForConfig(kubeCfg)
 	if err != nil {
@@ -283,7 +285,7 @@ func (w *Watcher) updateSunpikeStatus(kubeCfg *rest.Config, clsAddon *v1alpha2.C
 	return nil
 }
 
-func (w *Watcher) processClusterAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon, localAddon *agentv1.Addon, localAddonFound bool) error {
+func (w *AddonClient) processClusterAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.ClusterAddon, localAddon *agentv1.Addon, localAddonFound bool) error {
 	//Convert clusterAddon object to Addon
 	convAddon := convertToAddon(clsAddon)
 
@@ -362,7 +364,7 @@ func (w *Watcher) processClusterAddon(kubeCfg *rest.Config, clsAddon *v1alpha2.C
 
 //Check health of each installed Addon and set status healthy=true
 //Update status only if it has changed
-func (w *Watcher) updateHealth() error {
+func (w *AddonClient) updateHealth() error {
 	addonList := &agentv1.AddonList{}
 	err := w.client.List(w.ctx, addonList)
 	if err != nil {

@@ -31,6 +31,11 @@ import (
 	"github.com/platform9/pf9-addon-operator/pkg/watch"
 )
 
+const (
+	operationInstall   = "install"
+	operationUnInstall = "uninstall"
+)
+
 // AddonReconciler reconciles a Addon object
 type AddonReconciler struct {
 	client.Client
@@ -79,9 +84,9 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// cleanup does not happen correctly. Since the finalizer is not present, the object is deleted
 	// right away and we cannot get the spec in the Reconcile loop post delete. Deletion anyways ignores
 	// those resources which are not present, so cleaning up a partially installed Addon is not an issue
-	if !(operation == "uninstall" && syncErr != nil) {
+	if !(operation == operationUnInstall && syncErr != nil) {
 		log.Infof("Updating finalizer for addon: %s", addon.Name)
-		setFinalizer(&addon, operation)
+		updateFinalizer(&addon, operation)
 	}
 
 	err = r.Update(ctx, &addon)
@@ -101,12 +106,12 @@ func (r *AddonReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func setFinalizer(addon *agentv1.Addon, operation string) {
+func updateFinalizer(addon *agentv1.Addon, operation string) {
 	switch operation {
-	case "install":
+	case operationInstall:
 		log.Infof("Adding finalizer for addon: %s", addon.Name)
 		addon.ObjectMeta.Finalizers = []string{"addons.pf9.io"}
-	case "uninstall":
+	case operationUnInstall:
 		log.Infof("Removing finalizer for addon: %s", addon.Name)
 		addon.ObjectMeta.Finalizers = []string{}
 	}
@@ -117,10 +122,10 @@ func getOperation(addon *agentv1.Addon) string {
 	finalizers := len(addon.ObjectMeta.Finalizers)
 
 	if addon.ObjectMeta.DeletionTimestamp.IsZero() {
-		operation = "install"
+		operation = operationInstall
 		log.Infof("Installing Addon: %s finalizers: %d", addon.Name, finalizers)
 	} else {
-		operation = "uninstall"
+		operation = operationUnInstall
 		if finalizers >= 0 {
 			log.Infof("Uninstalling Addons: %s", addon.Name)
 		} else {

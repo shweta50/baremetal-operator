@@ -55,22 +55,22 @@ const (
 	templateDockerRegistry = "DockerRegistry"
 )
 
-// Watcher handles events on the Addon object
-type Watcher struct {
+// AddonClient handles events on the Addon object
+type AddonClient struct {
 	client client.Client
 	ctx    context.Context
 }
 
 // New returns new instance of watcher
-func New(c client.Client) (*Watcher, error) {
-	return &Watcher{
+func New(c client.Client) (*AddonClient, error) {
+	return &AddonClient{
 		client: c,
 		ctx:    context.Background(),
 	}, nil
 }
 
 // ListAddons lists all available addons and their status
-func (w *Watcher) ListAddons() ([]objects.AddonState, error) {
+func (w *AddonClient) ListAddons() ([]objects.AddonState, error) {
 
 	var currState []objects.AddonState
 
@@ -94,7 +94,7 @@ func (w *Watcher) ListAddons() ([]objects.AddonState, error) {
 }
 
 //SyncEvent processes new addon event
-func (w *Watcher) SyncEvent(addon *agentv1.Addon, operation string) error {
+func (w *AddonClient) SyncEvent(addon *agentv1.Addon, operation string) error {
 
 	log.Infof("Operation: %s", operation)
 	switch operation {
@@ -111,7 +111,7 @@ func (w *Watcher) SyncEvent(addon *agentv1.Addon, operation string) error {
 	return nil
 }
 
-func (w *Watcher) install(addon *agentv1.Addon) error {
+func (w *AddonClient) install(addon *agentv1.Addon) error {
 
 	var err error
 
@@ -127,7 +127,7 @@ func (w *Watcher) install(addon *agentv1.Addon) error {
 	return err
 }
 
-func (w *Watcher) uninstall(addon *agentv1.Addon) error {
+func (w *AddonClient) uninstall(addon *agentv1.Addon) error {
 
 	var err error
 
@@ -143,7 +143,7 @@ func (w *Watcher) uninstall(addon *agentv1.Addon) error {
 	return err
 }
 
-func (w *Watcher) upgrade(addon *agentv1.Addon) error {
+func (w *AddonClient) upgrade(addon *agentv1.Addon) error {
 
 	var err error
 

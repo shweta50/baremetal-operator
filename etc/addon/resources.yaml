@@ -2,9 +2,8 @@ resources:
   deployment/kube-system/coredns: coredns
   configmap/kube-system/coredns: coredns
   service/kube-system/kube-dns: coredns
-  deployment/kube-system/cluster-autoscaler: cluster-auto-scaler-aws
+  deployment/kube-system/cluster-autoscaler: cluster-auto-scaler
   configmap/kube-system/cluster-autoscaler-priority-expander: cluster-auto-scaler-aws
-  deployment/kube-system/cluster-autoscaler: cluster-auto-scaler-azure
   secret/kube-system/cluster-autoscaler-azure: cluster-auto-scaler-azure
   deployment/kubernetes-dashboard/dashboard-metrics-scraper: kubernetes-dashboard
   deployment/kubernetes-dashboard/kubernetes-dashboard: kubernetes-dashboard
