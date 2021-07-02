@@ -1,12 +1,12 @@
 package token
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
@@ -18,31 +18,47 @@ const (
 	kubeCfgTemplate = "/etc/addon/keystone.kubeconfig.template"
 )
 
-type JWTClaims struct {
-	Foo string `json:"foo"`
-	jwt.StandardClaims
-}
+func getSunpikeKubeCfg(ctx context.Context, clusterID, project string) (string, error) {
+	kubeCfgPath := clusterID + ".cfg"
 
-//GetSunpikeKubeCfg gets sunpike kubecfg for a specific cluster
-func GetSunpikeKubeCfg(token, clusterID, project string) (*rest.Config, error) {
+	// Check if the token has expired, if not use existing kubeconfig file
+	if tokenCache.keystoneToken != "" && time.Now().Before(tokenCache.expires) {
+		if _, err := os.Stat(kubeCfgPath); err == nil {
+			return kubeCfgPath, nil
+		}
+	}
+
+	keystoneAuthResult, err := getKeystoneToken(ctx, clusterID, project)
+	if err != nil {
+		return "", err
+	}
 
 	duFqdn := os.Getenv(util.DuFqdnEnvVar)
 
 	data, err := ioutil.ReadFile(kubeCfgTemplate)
 	if err != nil {
 		log.Errorf("Failed to read kubecfg template: %s", err)
-		return nil, err
+		return "", err
 	}
 
 	buf := strings.Replace(string(data), "__DU_QBERT_FQDN__", duFqdn, 1)
-	buf = strings.Replace(buf, "__KEYSTONE_TOKEN__", token, 1)
-	buf = strings.Replace(buf, "__PROJECT_ID__", project, 1)
-
-	kubeCfgPath := clusterID + ".cfg"
+	buf = strings.Replace(buf, "__KEYSTONE_TOKEN__", keystoneAuthResult.Token, 1)
+	buf = strings.Replace(buf, "__PROJECT_ID__", keystoneAuthResult.ProjectID, 1)
 
 	err = ioutil.WriteFile(kubeCfgPath, []byte(buf), 0600)
 	if err != nil {
 		log.Errorf("Failed to get write kubecfg: %s", err)
+		return "", err
+	}
+
+	return kubeCfgPath, nil
+}
+
+//GetSunpikeKubeCfg gets sunpike kubecfg for a specific cluster
+func GetSunpikeKubeCfg(ctx context.Context, clusterID, project string) (*rest.Config, error) {
+
+	kubeCfgPath, err := getSunpikeKubeCfg(ctx, clusterID, project)
+	if err != nil {
 		return nil, err
 	}
 
@@ -56,20 +72,4 @@ func GetSunpikeKubeCfg(token, clusterID, project string) (*rest.Config, error) {
 	}
 
 	return cfg, err
-}
-
-//GetSunpikeToken gets a token to reach sunpike through qbert v5
-func GetSunpikeToken() (string, error) {
-	key := []byte("901C6739B76A4320B7C06578AF469F5A")
-	// Create the Claims
-	claims := JWTClaims{
-		"2415D3FD3AE2",
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-			Issuer:    "addon",
-		},
-	}
-
-	encToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return encToken.SignedString(key)
 }

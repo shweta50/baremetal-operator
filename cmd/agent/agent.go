@@ -81,10 +81,14 @@ func main() {
 	}
 
 	// +kubebuilder:scaffold:builder
-	go healthCheck()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg, ctx := errgroup.WithContext(ctx)
+	// Cannot use wg.Go here, because in the health check routine there is no one who will
+	// wait on stopc channel created by ctx.Done(), if we still use wg.Go here, it will block
+	// and does not exit gracefully
+	go healthCheck(ctx)
+	//wg.Go(func() error { return healthCheck(ctx) })
 	wg.Go(func() error { return watchResources(ctx, ctx.Done()) })
 
 	log.Info("Starting manager...")
@@ -142,7 +146,7 @@ func watchResources(ctx context.Context, stopc <-chan struct{}) error {
 	return nil
 }
 
-func healthCheck() {
+func healthCheck(ctx context.Context) error {
 
 	cl, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
 	if err != nil {
@@ -169,14 +173,14 @@ func healthCheck() {
 	errCount := 0
 
 	for {
-		if err := w.HealthCheck(clusterID, projectID); err != nil {
+		if err := w.HealthCheck(ctx, clusterID, projectID); err != nil {
 			log.Errorf("Error in healthcheck: %s", err)
 
 			// In case there is an error reaching the du_fqdn then maintain a count
 			// beyond which restart the pod, normally client-go works even if the network
 			// goes away for a while and is restored, but in some special cases we had
 			// to ensure pod restart, see: PMK-3821
-			if addonerr.IsListClusterAddons(err) {
+			if addonerr.IsListClusterAddons(err) || addonerr.IsGenKeystoneToken(err) {
 				errCount++
 
 				log.Errorf("List ClusterAddons error count: %d of %d", errCount, maxSyncErrCount)
@@ -189,4 +193,6 @@ func healthCheck() {
 		}
 		time.Sleep(time.Duration(healthCheckInterval) * time.Second)
 	}
+
+	return nil
 }

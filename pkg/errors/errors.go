@@ -13,6 +13,8 @@ const (
 	ErrUnauthorized = 4
 	// ErrListClusterAddons indicates error listing ClusterAddon objects from sunpike
 	ErrListClusterAddons = 5
+	// ErrGenKeystoneToken indicates error creating keystone token through comms
+	ErrGenKeystoneToken = 6
 )
 
 // AddonError represents application errors for Addon
@@ -68,6 +70,25 @@ func ListClusterAddons() AddonError {
 func IsListClusterAddons(e error) bool {
 	ae, ok := e.(AddonError)
 	if ok && ae.Code == ErrListClusterAddons {
+		return true
+	}
+
+	return false
+}
+
+// GenKeystoneToken returns error of sunpike not reachable
+func GenKeystoneToken() AddonError {
+	return AddonError{
+		Code:    ErrGenKeystoneToken,
+		Reason:  "Error listing ClusterAddon objects from sunpike",
+		Requeue: false,
+	}
+}
+
+// IsGenKeystoneToken checks if error is of type ErrGenKeystoneToken
+func IsGenKeystoneToken(e error) bool {
+	ae, ok := e.(AddonError)
+	if ok && ae.Code == ErrGenKeystoneToken {
 		return true
 	}
 

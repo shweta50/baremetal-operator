@@ -1,7 +1,7 @@
 CGO_ENABLED=0
 GOOS=linux
 GOARCH=amd64
-RELEASE=3.0.0
+RELEASE=4.0.0
 KUBERNETES_VERSION="v1.20.5"
 KUBERNETES_GITHUB_RAW_BASEURL := https://raw.githubusercontent.com/kubernetes/kubernetes/${KUBERNETES_VERSION}
 WGET_CMD := wget --progress=dot:giga

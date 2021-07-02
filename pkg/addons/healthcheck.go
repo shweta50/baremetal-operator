@@ -17,6 +17,7 @@ package addons
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -165,7 +166,7 @@ func convertToAddon(clsAddon *v1alpha2.ClusterAddon) agentv1.Addon {
 }
 
 //HealthCheck checks health of all installed addons
-func (w *AddonClient) HealthCheck(clusterID, projectID string) error {
+func (w *AddonClient) HealthCheck(ctx context.Context, clusterID, projectID string) error {
 
 	if err := w.updateHealth(); err != nil {
 		return err
@@ -175,16 +176,10 @@ func (w *AddonClient) HealthCheck(clusterID, projectID string) error {
 		return nil
 	}
 
-	ksToken, err := token.GetSunpikeToken()
-	if err != nil {
-		log.Errorf("Failed to generate token: %s", err)
-		return err
-	}
-
-	kubeCfg, err := token.GetSunpikeKubeCfg(ksToken, clusterID, projectID)
+	kubeCfg, err := token.GetSunpikeKubeCfg(ctx, clusterID, projectID)
 	if err != nil {
 		log.Errorf("Unable to get kubeconfig for cluster: %s %s", clusterID, err)
-		return err
+		return addonerr.GenKeystoneToken()
 	}
 
 	if err := w.SyncClusterAddons(clusterID, projectID, kubeCfg); err != nil {
