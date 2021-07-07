@@ -33,9 +33,11 @@ func getAddonClient(mode, version string, params map[string]interface{}, c clien
 		instance = newAutoScalerAzure(c, version, params)
 	case "kubevirt":
 		instance = newKubeVirt(c, version, params)
+	case "luigi":
+		instance = newLuigi(c, version, params)
 
 	default:
-		log.Panicf("Mode %s is not supported", mode)
+		log.Errorf("Mode %s is not supported", mode)
 	}
 
 	return instance

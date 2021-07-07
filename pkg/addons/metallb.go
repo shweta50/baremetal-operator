@@ -94,6 +94,19 @@ func (c *MetallbClient) Upgrade() error {
 //Install installs an metallb instance
 func (c *MetallbClient) Install() error {
 
+	labels := []util.Labels{
+		util.Labels{
+			Key:   "app",
+			Value: "metallb",
+		},
+	}
+
+	err := util.CreateNsIfNeeded(metallbNS, labels, c.client)
+	if err != nil {
+		log.Errorf("Failed to create ns: %s %s", metallbNS, err)
+		return err
+	}
+
 	inputPath, outputPath, err := util.EnsureDirStructure(metallbDir, c.version)
 	if err != nil {
 		return err

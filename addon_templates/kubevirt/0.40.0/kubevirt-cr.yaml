@@ -1,0 +1,31 @@
+---
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  certificateRotateStrategy: {}
+  configuration:
+    developerConfiguration:
+      featureGates:
+        - "LiveMigration"
+  customizeComponents: {}
+  imagePullPolicy: IfNotPresent
+  workloadUpdateStrategy: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pf9-kubevirt-vm-node-exporter
+  namespace: kubevirt
+  labels:
+    prometheus.kubevirt.io: "pf9-node-exporter"
+spec:
+  ports:
+    - name: metrics
+      port: 9100
+      targetPort: 9100
+      protocol: TCP
+  selector:
+    prometheus.kubevirt.io: "pf9-node-exporter"

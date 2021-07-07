@@ -17,3 +17,6 @@ resources:
   deployment/kube-system/metrics-server-v0.3.6: metrics-server
   configmap/kube-system/metrics-server-config: metrics-server
   service/kube-system/metrics-server: metrics-server
+  deployment/cdi/cdi-operator: kubevirt
+  deployment/kubevirt/virt-operator: kubevirt
+  deployment/luigi-system/luigi-controller-manager: luigi

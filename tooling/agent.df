@@ -5,5 +5,4 @@ RUN apk add curl
 COPY ./bin/manager /
 COPY addon_templates /addon_templates
 COPY etc/addon /etc/addon
-RUN chmod +x /manager
 ENTRYPOINT ["/manager"]

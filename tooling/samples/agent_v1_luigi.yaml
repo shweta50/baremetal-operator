@@ -1,9 +1,9 @@
 apiVersion: agent.pf9.io/v1
 kind: Addon
 metadata:
-  name: d4b9d516-c44c-11eb-8529-0242ac130003-kubevirt
+  name: d4b9d516-c44c-11eb-8529-0242ac130003-luigi
 spec:
   clusterID: d4b9d516-c44c-11eb-8529-0242ac130003
-  type: "kubevirt"
-  version: "0.40.0"
+  type: "luigi"
+  version: "0.2.2"
   watch: true

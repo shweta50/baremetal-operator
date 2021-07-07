@@ -63,6 +63,12 @@ const (
 	DuFqdnEnvVar = "DU_FQDN"
 )
 
+// Labels is used to add lables to a resource
+type Labels struct {
+	Key   string
+	Value string
+}
+
 // CheckEnvVarsOnBootup checks all env variables and their format on startup
 func CheckEnvVarsOnBootup() {
 	var err error
@@ -455,6 +461,25 @@ func GetDeployment(ns, name string, c client.Client) (*appsv1.Deployment, error)
 	return d, nil
 }
 
+//DeleteDeployment deletes a Deployment
+func DeleteDeployment(ns, name string, c client.Client) error {
+	d := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+		Namespace: ns,
+		Name:      name,
+	}}
+
+	err := c.Delete(context.Background(), d)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 //GetDaemonset gets a Daemonset
 func GetDaemonset(ns, name string, c client.Client) (*appsv1.DaemonSet, error) {
 	d := &appsv1.DaemonSet{}
@@ -472,4 +497,53 @@ func GetDaemonset(ns, name string, c client.Client) (*appsv1.DaemonSet, error) {
 	}
 
 	return d, nil
+}
+
+//DeleteDaemonset deletes a Daemonset
+func DeleteDaemonset(ns, name string, c client.Client) error {
+
+	d := &appsv1.DaemonSet{ObjectMeta: metav1.ObjectMeta{
+		Namespace: ns,
+		Name:      name,
+	}}
+	err := c.Delete(context.Background(), d)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+// CreateNsIfNeeded creates ns if not present
+func CreateNsIfNeeded(name string, labels []Labels, c client.Client) error {
+	ctx := context.Background()
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	err := c.Get(ctx, client.ObjectKey{
+		Name: name,
+	}, ns)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			for _, l := range labels {
+				ns.ObjectMeta.Labels = map[string]string{
+					l.Key: l.Value,
+				}
+			}
+
+			return c.Create(ctx, ns)
+		}
+
+		log.Error(err, "while querying namespace")
+		return err
+	}
+
+	return nil
 }

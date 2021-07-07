@@ -39,6 +39,7 @@ unit-tests:
 
 build: compile
 	echo "Building docker image"; \
+    chmod +x bin/manager
 	docker build -t platform9/pf9-addon-operator:${RELEASE} -f tooling/agent.df .
 
 
