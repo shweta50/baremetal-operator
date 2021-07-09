@@ -17,11 +17,6 @@ const (
 	cacheValidityHours = 10
 )
 
-type keystoneCache struct {
-	keystoneToken string
-	expires       time.Time
-}
-
 type keystoneAuthResult struct {
 	ProjectID string `json:"projectID"`
 	Token     string `json:"token"`
@@ -35,9 +30,7 @@ var defaultConfig = grpcConfig{
 	GRPCRetryTimeoutSeconds: 5,
 }
 
-var tokenCache = keystoneCache{
-	expires: time.Now(),
-}
+var tokenCache = keystoneAuthResult{}
 
 type grpcConfig struct {
 	ClusterID               string
@@ -57,16 +50,21 @@ func getKeystoneToken(ctx context.Context, clusterID, project string) (*keystone
 	// Make rpc call to sunpike conductor through comms
 	keystoneAuthResult, err := fetchSunpikeAuthInfo(ctx, &defaultConfig)
 	if err != nil {
-		log.Errorf("Error creating sunpike client: %s", err)
+		log.Errorf("Error fetching keystone token: %s", err)
+		if tokenCache.Token != "" && tokenCache.ProjectID != "" {
+			log.Info("Using cached token")
+			return &tokenCache, nil
+		}
+
 		return nil, err
 	}
 
-	tokenCache.keystoneToken = keystoneAuthResult.Token
-	// TODO: We don't get keystone token expiry time from sunpike
-	// manually store token expiry time as 10 hours from now
-	tokenCache.expires = time.Now().Add(cacheValidityHours * time.Hour)
+	if tokenCache.Token != keystoneAuthResult.Token {
+		tokenCache.Token = keystoneAuthResult.Token
+		tokenCache.ProjectID = keystoneAuthResult.ProjectID
+	}
 
-	return keystoneAuthResult, nil
+	return &tokenCache, nil
 }
 
 func fetchSunpikeAuthInfo(ctx context.Context, cfg *grpcConfig) (*keystoneAuthResult, error) {

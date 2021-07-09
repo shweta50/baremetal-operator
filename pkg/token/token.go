@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -20,13 +19,6 @@ const (
 
 func getSunpikeKubeCfg(ctx context.Context, clusterID, project string) (string, error) {
 	kubeCfgPath := clusterID + ".cfg"
-
-	// Check if the token has expired, if not use existing kubeconfig file
-	if tokenCache.keystoneToken != "" && time.Now().Before(tokenCache.expires) {
-		if _, err := os.Stat(kubeCfgPath); err == nil {
-			return kubeCfgPath, nil
-		}
-	}
 
 	keystoneAuthResult, err := getKeystoneToken(ctx, clusterID, project)
 	if err != nil {
