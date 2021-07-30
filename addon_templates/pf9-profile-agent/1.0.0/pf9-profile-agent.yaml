@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pf9-profile-agent
+  namespace: platform9-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pf9-profile-agent
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pf9-profile-agent
+subjects:
+  - kind: ServiceAccount
+    name: pf9-profile-agent
+    namespace: platform9-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pf9-profile-agent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: pf9-addons
+  name: pf9-profile-agent
+  namespace: platform9-system
+spec:
+  selector:
+    matchLabels:
+      app: pf9-addons
+  template:
+    metadata:
+      labels:
+        app: pf9-addons
+    spec:
+      serviceAccountName: pf9-profile-agent
+      hostNetwork: true
+      containers:
+        - name: pf9-profile-agent
+          image: {{ .DockerRegistry }}/platform9/pf9-profile-agent:1.0.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          env:
+            - name: CLUSTER_ID
+              value: {{ .ClusterId }}
+            - name: PROJECT_ID
+              value: {{ .ProjectId }}
+            - name: DEBUG
+              value: "true"
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Equal
+          value: "true"
+      nodeSelector:
+        node-role.kubernetes.io/master: ""

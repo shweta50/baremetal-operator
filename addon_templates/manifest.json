@@ -26,5 +26,9 @@
         {
             "version": "1.13.8",
             "type": "cluster-auto-scaler-azure"
+        },
+        {
+          "version": "1.0.0",
+          "type": "pf9-profile-agent"
         }
 ]

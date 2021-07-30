@@ -35,6 +35,8 @@ func getAddonClient(mode, version string, params map[string]interface{}, c clien
 		instance = newKubeVirt(c, version, params)
 	case "luigi":
 		instance = newLuigi(c, version, params)
+	case "pf9-profile-agent":
+		instance = newProfileAgent(c, version, params)
 
 	default:
 		log.Errorf("Mode %s is not supported", mode)

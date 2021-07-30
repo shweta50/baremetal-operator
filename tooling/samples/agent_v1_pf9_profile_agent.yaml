@@ -1,0 +1,8 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: pf9-profile-agent
+spec:
+  version: 1.0.0
+  type: "pf9-profile-agent"
+  watch: true
