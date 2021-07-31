@@ -227,7 +227,7 @@ func (c *MetallbClient) postInstall() error {
 			return err
 		}
 
-		err = util.CreateSecret(metallbNS, metallbSecret, metallbSecretKey, val, c.client)
+		err = util.CreateSecret(metallbNS, metallbSecret, metallbSecretKey, []byte(val), c.client)
 		if err != nil {
 			log.Errorf("Failed to get secret: %s", err)
 			return err

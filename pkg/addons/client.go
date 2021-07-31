@@ -33,6 +33,8 @@ func getAddonClient(mode, version string, params map[string]interface{}, c clien
 		instance = newAutoScalerAzure(c, version, params)
 	case "kubevirt":
 		instance = newKubeVirt(c, version, params)
+	case "monitoring":
+		instance = newMonitoring(c, version, params)
 	case "luigi":
 		instance = newLuigi(c, version, params)
 	case "pf9-profile-agent":

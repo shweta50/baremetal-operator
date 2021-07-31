@@ -1,0 +1,158 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: "pf9:system-prometheus"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - services
+  - endpoints
+  - pods
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get  
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: system-prometheus
+  namespace: pf9-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pf9:system-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name:  "pf9:system-prometheus"
+subjects:
+- kind: ServiceAccount
+  name: system-prometheus
+  namespace: pf9-monitoring
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: system
+  namespace: pf9-monitoring
+spec:
+  image: {{ .QuayRegistry }}/prometheus/prometheus
+  additionalScrapeConfigs:
+    key: additional-scrape-config.yaml
+    name: scrapeconfig
+  alerting:
+    alertmanagers:
+    - name: sys-alertmanager
+      namespace: pf9-monitoring
+      port: web
+  replicas: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  retention: {{ .retentionTime }}
+  ruleSelector:
+    matchLabels:
+      prometheus: system
+      role: alert-rules
+  scrapeInterval: 2m
+  serviceAccountName: system-prometheus
+{{- if .storageClassName }}  
+  storage:
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .pvcSize }}
+        storageClassName: {{ .storageClassName }}
+{{- end }}  
+  serviceMonitorSelector:
+    matchLabels:
+      prometheus: system
+      role: service-monitor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sys-prometheus
+  namespace: pf9-monitoring
+spec:
+  ports:
+  - name: web
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    prometheus: system
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    prometheus: system
+    role: service-monitor
+  name: system-service-monitor
+  namespace: pf9-monitoring
+spec:
+  endpoints:
+  - port: web
+  namespaceSelector:
+    matchNames:
+    - pf9-monitoring
+    - pf9-operators
+  selector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values:
+      - node-exporter
+      - kube-state-metrics
+      - mon-helper
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: sysalert
+  namespace: pf9-monitoring
+spec:
+  image: {{ .QuayRegistry }}/prometheus/alertmanager:v0.21.0
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  serviceAccountName: system-prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sys-alertmanager
+  namespace: pf9-monitoring
+spec:
+  ports:
+  - name: web
+    port: 9093
+    protocol: TCP
+    targetPort: 9093
+  selector:
+    alertmanager: sysalert
+  type: ClusterIP

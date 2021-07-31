@@ -30,6 +30,7 @@ import (
 	"github.com/platform9/pf9-addon-operator/pkg/apply"
 	"github.com/platform9/pf9-addon-operator/pkg/objects"
 	appsv1 "k8s.io/api/apps/v1"
+	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -369,19 +370,40 @@ func GetSecret(ns, name string, c client.Client) (*corev1.Secret, error) {
 }
 
 //CreateSecret creates a secret
-func CreateSecret(ns, name, key, data string, c client.Client) error {
+func CreateSecret(ns, name, key string, data []byte, c client.Client) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      name,
 		},
 		Data: map[string][]byte{
-			key: []byte(data),
+			key: data,
 		},
 	}
 
 	err := c.Create(context.Background(), secret)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//DeleteSecret deletes a secret
+func DeleteSecret(ns, name string, c client.Client) error {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      name,
+		},
+	}
+
+	err := c.Delete(context.Background(), secret)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
 		return err
 	}
 
@@ -405,6 +427,47 @@ func GetConfigMap(ns, name string, c client.Client) (*corev1.ConfigMap, error) {
 	}
 
 	return cfgMap, nil
+}
+
+//DeleteConfigMap deletes a configmap
+func DeleteConfigMap(ns, name string, c client.Client) error {
+	cfgMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      name,
+		},
+	}
+
+	err := c.Delete(context.Background(), cfgMap)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+//CreateConfigMap creates a configmap
+func CreateConfigMap(ns, name, key string, data []byte, c client.Client) error {
+	cfgMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      name,
+		},
+		Data: map[string]string{
+			key: string(data),
+		},
+	}
+
+	err := c.Create(context.Background(), cfgMap)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //CheckClusterUpgrading check if cluster is in upgrading mode
@@ -518,6 +581,25 @@ func DeleteDaemonset(ns, name string, c client.Client) error {
 	return nil
 }
 
+//GetStatefulSet gets a StatefulSet
+func GetStatefulSet(ns, name string, c client.Client) (*appsv1.StatefulSet, error) {
+	s := &appsv1.StatefulSet{}
+
+	err := c.Get(context.Background(), client.ObjectKey{
+		Namespace: ns,
+		Name:      name,
+	}, s)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return s, nil
+}
+
 // CreateNsIfNeeded creates ns if not present
 func CreateNsIfNeeded(name string, labels []Labels, c client.Client) error {
 	ctx := context.Background()
@@ -545,5 +627,26 @@ func CreateNsIfNeeded(name string, labels []Labels, c client.Client) error {
 		return err
 	}
 
+	return nil
+}
+
+//DeleteObject deletes an unstructured object
+func DeleteObject(ns, name, kind, apiVersion string, c client.Client) error {
+	obj := &uns.Unstructured{}
+	//obj.SetGroupVersionKind(gvk)
+	obj.SetName(name)
+	obj.SetNamespace(ns)
+	obj.SetAPIVersion(apiVersion)
+	obj.SetKind(kind)
+
+	if err := c.Delete(context.Background(), obj); err != nil {
+		log.Error(err, " deleting object")
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	log.Infof("Deleted %s %s/%s successfully", kind, ns, name)
 	return nil
 }
