@@ -16,7 +16,7 @@
             "type": "metallb"
         },
         {
-            "version": "0.3.6",
+            "version": "0.5.0",
             "type": "metrics-server"
         },
         {

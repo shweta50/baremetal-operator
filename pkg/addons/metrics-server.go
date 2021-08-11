@@ -11,7 +11,7 @@ import (
 const (
 	metricsServerNS     = "kube-system"
 	metricsServerDir    = "metrics-server"
-	metricsServerDeploy = "metrics-server-v0.3.6"
+	metricsServerDeploy = "metrics-server-v0.5.0"
 )
 
 // MetricsServerClient represents implementation for interacting with plain K8s cluster
@@ -77,6 +77,9 @@ func (c *MetricsServerClient) Install() error {
 		return err
 	}
 
+	//Delete deployment from an older version to ensure two metrics-servers dont run in parallel
+	util.DeleteObject(metricsServerNS, "metrics-server-v0.3.6", "Deployment", "apps/v1", c.client)
+
 	inputFilePath := filepath.Join(inputPath, "metrics-server.yaml")
 	outputFilePath := filepath.Join(outputPath, "metrics-server.yaml")
 
@@ -103,6 +106,9 @@ func (c *MetricsServerClient) Uninstall() error {
 	if err != nil {
 		return err
 	}
+
+	//Delete deployment from an older version to ensure cleanup
+	util.DeleteObject(metricsServerNS, "metrics-server-v0.3.6", "Deployment", "apps/v1", c.client)
 
 	inputFilePath := filepath.Join(inputPath, "metrics-server.yaml")
 	outputFilePath := filepath.Join(outputPath, "metrics-server.yaml")

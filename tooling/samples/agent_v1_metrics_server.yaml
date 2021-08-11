@@ -4,5 +4,5 @@ metadata:
   name: metrics-server
 spec:
   type: "metrics-server"
-  version: "0.3.6"
+  version: "0.5.0"
   watch: true

@@ -13,7 +13,7 @@
         "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
         "override": {},
         "type": "metrics-server",
-        "version": "0.3.6",
+        "version": "0.5.0",
         "watch": true
     }
 }
