@@ -3,10 +3,14 @@ kind: Addon
 metadata:
   name: metallb
 spec:
-  version: 0.9.3
+  clusterID: clsuuid
+  version: 0.9.7
   type: "metallb"
   watch: true
   override:
     params:
     - name: MetallbIpRange
       value: "192.168.5.0-192.168.6.0"
+# Optional:
+#    - name: base64EncMetallbConfig
+#      value: "YWRkcmVzcy1wb29sczoKLSBuYW1lOiBkZWZhdWx0CiAgcHJvdG9jb2w6IGxheWVyMgogIGFkZHJlc3NlczoKICAgLSAxOTIuMTY4LjUuMC0xOTIuMTY4LjYuMAotIG5hbWU6IHBvb2wKICBwcm90b2NvbDogbGF5ZXIyCiAgYWRkcmVzc2VzOgogICAtIDE5Mi4xNjguNy4wLTE5Mi4xNjguOC4wCg=="

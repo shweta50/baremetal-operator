@@ -3,24 +3,21 @@ kind: Addon
 metadata:
   name: coredns
 spec:
+  clusterID: clsuuid
   type: coredns
-  version: 1.6.5
+  version: 1.7.1
   watch: true
   override:
     params:
-#    - name: additionalDnsConfig
-#      value: "kfplc.com:53 {
-#      errors
-#      cache 30
-#      forward . 10.246.6.1
-#      }"
     - name: dnsMemoryLimit
       value: "170Mi"
     - name: dnsDomain
       value: "cluster.local"
     - name: dnsServer
       value: "10.21.0.10"
-    - name: enableAdditionalDnsConfig
-      value: "false"
-    - name: base64EncAdditionalDnsConfig
-      value: "ICAgICAga2ZwbGMuY29tOjUzIHsKICAgICAgZXJyb3JzCiAgICAgIGNhY2hlIDMwCiAgICAgIGZvcndhcmQgLiAxMC4yNDYuNi4xCiAgICAgIH0K"
+#Optional      
+#    - name: base64EncAdditionalDnsConfig
+#      value: "ICAgICAga2ZwbGMuY29tOjUzIHsKICAgICAgZXJyb3JzCiAgICAgIGNhY2hlIDMwCiAgICAgIGZvcndhcmQgLiAxMC4yNDYuNi4xCiAgICAgIH0K"
+#Optional: if base64EncEntireDnsConfig is specified, dnsDomain and base64EncAdditionalDnsConfig are irrelevant
+#    - name: base64EncEntireDnsConfig
+#      value: "Ljo1MzAwIHsKICAgIGVycm9ycwogICAgaGVhbHRoIHsKICAgICAgICBsYW1lZHVjayA1cwogICAgfQogICAgcmVhZHkKICAgIGt1YmVybmV0ZXMgY2x1c3Rlci5sb2NhbCBpbi1hZGRyLmFycGEgaXA2LmFycGEgewogICAgICAgIHBvZHMgaW5zZWN1cmUKICAgICAgICBmYWxsdGhyb3VnaCBpbi1hZGRyLmFycGEgaXA2LmFycGEKICAgICAgICB0dGwgMzAKICAgIH0KICAgIHByb21ldGhldXMgOjkxNTMKICAgIGZvcndhcmQgLiAvZXRjL3Jlc29sdi5jb25mIHsKICAgICAgICBtYXhfY29uY3VycmVudCAxMDAwCiAgICB9CmNhY2hlIDMwCiAgICBsb29wCiAgICByZWxvYWQKICAgIGxvYWRiYWxhbmNlCn0K"
