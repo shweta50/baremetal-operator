@@ -12,25 +12,18 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"runtime"
 
 	"path/filepath"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kudobuilder/kudo/pkg/engine/renderer"
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/pkg/apply"
 	"github.com/platform9/pf9-addon-operator/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiyaml "k8s.io/apimachinery/pkg/util/yaml"
-)
-
-const (
-	kubectlPath = "/usr/local/bin/kubectl"
-	kubeConfig  = "/Users/mayureshk/.kube/config"
 )
 
 // Process processess an addon pkg
@@ -128,32 +121,6 @@ func getYamlFile(kdir string) (string, error) {
 	return matches[0], nil
 }
 
-func renderYaml(kdir string, vals map[string]interface{}) (string, error) {
-	fname, err := getYamlFile(kdir)
-	if err != nil {
-		log.Errorf("Failed to find yaml in dir: %s", kdir)
-		return "", err
-	}
-
-	content, err := ioutil.ReadFile(fname)
-	if err != nil {
-		log.Errorf("Failed to read yaml %s", fname)
-		return "", err
-	}
-
-	text := string(content)
-
-	engine := renderer.New()
-
-	rendered, err := engine.Render("test", text, vals)
-	if err != nil {
-		log.Errorf("error rendering template: %s", err)
-		return "", err
-	}
-
-	return rendered, err
-}
-
 //InstallPkg installs addon pkg
 func (w *AddonClient) InstallPkg(addon *agentv1.Addon) error {
 	pkgname := addon.Name + "-" + addon.Spec.Version
@@ -181,7 +148,7 @@ func (w *AddonClient) InstallPkg(addon *agentv1.Addon) error {
 	return nil
 }
 
-//UninstallPkg uninstalls kudo pkg
+//UninstallPkg uninstalls pkg
 func (w *AddonClient) UninstallPkg(addon *agentv1.Addon) error {
 	pkgname := addon.Name + "-" + addon.Spec.Version
 	log.Infof("UnInstalling pkg: %s", pkgname)
@@ -203,7 +170,7 @@ func (w *AddonClient) UninstallPkg(addon *agentv1.Addon) error {
 	return nil
 }
 
-//UpgradePkg upgrades kudo pkg
+//UpgradePkg upgrades pkg
 func (w *AddonClient) UpgradePkg(addon *agentv1.Addon) error {
 	pkgname := addon.Name + "-" + addon.Spec.Version
 	log.Infof("Upgrading pkg: %s", pkgname)
@@ -223,19 +190,6 @@ func (w *AddonClient) UpgradePkg(addon *agentv1.Addon) error {
 
 	log.Infof("Upgraded pkg: %s", pkgname)
 	return nil
-}
-
-func getKubeCmd() string {
-	switch runtime.GOOS {
-	case "linux":
-		return kubectlPath
-	case "darwin":
-		return "kubectl"
-	default:
-		log.Panicf("Unsupported OS: %s", runtime.GOOS)
-	}
-
-	return "kubectl"
 }
 
 func (w *AddonClient) installPkg(text string, addon *agentv1.Addon) error {

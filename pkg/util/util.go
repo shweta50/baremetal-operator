@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -50,6 +49,11 @@ const (
 	DisableSunpikeEnvVar = "DISABLE_SUNPIKE_SYNC"
 	// DisableSunpikeVal value used to disable sync
 	DisableSunpikeVal = "true"
+
+	// DisableWatchEnvVar Disable watch
+	DisableWatchEnvVar = "DISABLE_WATCH"
+	// DisableWatchVal value used to disable watch
+	DisableWatchVal = "true"
 
 	watchSleepEnvVar  = "WATCH_SLEEP_SECS"
 	watchSleepDefault = "60"
@@ -248,27 +252,6 @@ func WriteConfigToTemplate(inputPath, outputPath, fileName string, params map[st
 	}
 
 	return nil
-}
-
-//ReadManifestFile reads the addon manifest file
-func ReadManifestFile(path string) (map[string]objects.AddonState, error) {
-	var addonList []objects.AddonState
-
-	text, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Errorf("Failed to read file %s", path)
-		return nil, err
-	}
-	if err := json.Unmarshal(text, &addonList); err != nil {
-		return nil, err
-	}
-
-	addonState := map[string]objects.AddonState{}
-	for _, a := range addonList {
-		addonState[a.Type+"-"+a.Version] = a
-	}
-
-	return addonState, nil
 }
 
 //ApplyYaml on the specified path

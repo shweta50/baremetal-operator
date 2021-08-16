@@ -19,7 +19,6 @@ package addons
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,16 +31,12 @@ import (
 	"github.com/platform9/pf9-addon-operator/pkg/token"
 	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 	clientset "github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/generated/clientset/versioned"
-
-	"github.com/platform9/pf9-addon-operator/pkg/util"
 )
 
 const (
 	sunpikeClusterLabel = "sunpike.pf9.io/cluster"
 	sunpikeNs           = "default"
 )
-
-var disableSync = os.Getenv(util.DisableSunpikeEnvVar)
 
 func (w *AddonClient) getAddonsFromSunpike(kubeCfg *rest.Config, clusterID, projectID string) (map[string]v1alpha2.ClusterAddon, error) {
 
@@ -170,10 +165,6 @@ func (w *AddonClient) HealthCheck(ctx context.Context, clusterID, projectID stri
 
 	if err := w.updateHealth(); err != nil {
 		return err
-	}
-
-	if disableSync == util.DisableSunpikeVal {
-		return nil
 	}
 
 	kubeCfg, err := token.GetSunpikeKubeCfg(ctx, clusterID, projectID)

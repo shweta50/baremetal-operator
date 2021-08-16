@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
-	"github.com/platform9/pf9-addon-operator/pkg/objects"
 	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 )
 
@@ -67,30 +66,6 @@ func New(c client.Client) (*AddonClient, error) {
 		client: c,
 		ctx:    context.Background(),
 	}, nil
-}
-
-// ListAddons lists all available addons and their status
-func (w *AddonClient) ListAddons() ([]objects.AddonState, error) {
-
-	var currState []objects.AddonState
-
-	addonList := &agentv1.AddonList{}
-	err := w.client.List(w.ctx, addonList)
-	if err != nil {
-		log.Error("failed to list addons", err)
-		return nil, err
-	}
-
-	for _, a := range addonList.Items {
-		currState = append(currState, objects.AddonState{
-			Name:    a.Name,
-			Version: a.Spec.Version,
-			Type:    a.Spec.Type,
-			Phase:   string(a.Status.Phase),
-		})
-	}
-
-	return currState, nil
 }
 
 //SyncEvent processes new addon event

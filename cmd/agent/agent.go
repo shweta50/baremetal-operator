@@ -124,6 +124,11 @@ func setLogLevel() {
 // If any of those resources are manually changed, they are brought back to the original configuration.
 func watchResources(ctx context.Context, stopc <-chan struct{}) error {
 
+	disableWatch := os.Getenv(util.DisableWatchEnvVar)
+	if disableWatch == util.DisableWatchVal {
+		return nil
+	}
+
 	// Wait for a while before starting watch on resources,
 	// during bootstrap all addons deployed by the operator, we want to avoid those notifications
 	time.Sleep(90 * time.Second)
@@ -147,6 +152,11 @@ func watchResources(ctx context.Context, stopc <-chan struct{}) error {
 }
 
 func healthCheck(ctx context.Context) error {
+
+	disableSync := os.Getenv(util.DisableSunpikeEnvVar)
+	if disableSync == util.DisableSunpikeVal {
+		return nil
+	}
 
 	cl, err := client.New(ctrl.GetConfigOrDie(), client.Options{Scheme: scheme})
 	if err != nil {
