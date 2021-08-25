@@ -22,3 +22,11 @@ spec:
       value: 300Mi
     - name: memLimit
       value: 600Mi
+    - name: memExtra
+      value: 4Mi
+    - name: cpuExtra
+      value: 0.5m
+    - name: percentThreshold
+      value: "2"
+    - name: minClusterSize
+      value: "2"

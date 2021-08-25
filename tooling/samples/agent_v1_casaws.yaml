@@ -3,9 +3,9 @@ kind: Addon
 metadata:
   name: cluster-auto-scaler-aws
 spec:
+  clusterID: clsuuid 
   type: cluster-auto-scaler-aws
-  version: 1.14.7
-  operation: "install"
+  version: 1.14.8
   watch: true
   override:
     params:
@@ -13,3 +13,16 @@ spec:
       value: "sss-sss-sss-sss-sss"
     - name: clusterRegion
       value: "US_WEST"
+# Optional params
+    - name: cpuRequestLimit
+      value: "150m"
+    - name: memRequestLimit
+      value: "300Mi"
+    - name: cpuExtra
+      value: "0.5m"
+    - name: memExtra
+      value: "10Mi"
+    - name: percentThreshold
+      value: "5"
+    - name: minClusterSize
+      value: "2"

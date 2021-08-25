@@ -79,7 +79,9 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["cluster-autoscaler-status", "cluster-autoscaler-priority-expander"]
     verbs: ["delete", "get", "update", "watch", "list"]
-
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments" ]
+    verbs: [ "get","update", "patch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -131,6 +133,21 @@ data:
     - worker-{{ .clusterUUID }}
 
 ---
+{{- if .enableAddonResizer }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-config
+  namespace: kube-system
+  labels:
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: EnsureExists
+data:
+  NannyConfiguration: |-
+    apiVersion: nannyconfig/v1alpha1
+    kind: NannyConfiguration
+---
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -155,11 +172,11 @@ spec:
           name: cluster-autoscaler
           resources:
             limits:
-              cpu: {{ .cpuLimit }}
-              memory: {{ .memLimit }}
+              cpu: {{ .cpuLimit | default "200m" }}
+              memory: {{ .memLimit | default "600Mi" }}
             requests:
-              cpu: {{ .cpuRequest }}
-              memory: {{ .memRequest }}
+              cpu: {{ .cpuRequest | default "100m" }}
+              memory: {{ .memRequest | default "300Mi" }}
           command:
             - ./cluster-autoscaler
             - --v=4
@@ -176,6 +193,47 @@ spec:
               mountPath: /etc/ssl/certs/ca-certificates.crt
               readOnly: true
           imagePullPolicy: "Always"
+{{- if .enableAddonResizer }}
+        - image: {{ .K8sRegistry }}/autoscaling/addon-resizer:1.8.14
+          name: cluster-autoscaler-nanny
+          resources:
+            limits:
+              cpu: 100m
+              memory: 300Mi
+            requests:
+              cpu: 5m
+              memory: 50Mi  
+          command:
+            - /pod_nanny
+            - --config-dir=/etc/config
+            - --cpu={{ .cpuRequestLimit | default "150m" }}
+            - --extra-cpu={{ .cpuExtra | default "0.5m" }}
+            - --memory={{ .memRequestLimit | default "300Mi" }}
+            - --extra-memory={{ .memExtra | default "10Mi" }}
+            - --threshold={{ .percentThreshold | default "5" }}
+            - --deployment=cluster-autoscaler
+            - --container=cluster-autoscaler
+            - --poll-period=300000
+            - --estimator=exponential
+            - --minClusterSize={{ .minClusterSize | default "2" }}
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          imagePullPolicy: IfNotPresent
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /etc/config
+              name: cluster-autoscaler-config-volume
+{{- end }}
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master
@@ -187,3 +245,8 @@ spec:
         - name: ssl-certs
           hostPath:
             path: "/etc/pf9/certs/ca/cert.pem"
+{{- if .enableAddonResizer }}
+        - name: cluster-autoscaler-config-volume
+          configMap:
+            name: cluster-autoscaler-config
+{{- end }}

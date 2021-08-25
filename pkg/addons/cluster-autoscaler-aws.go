@@ -43,7 +43,7 @@ func (c *AutoScalerAwsClient) overrideRegistry() {
 //ValidateParams validates params of an addon
 func (c *AutoScalerAwsClient) ValidateParams() (bool, error) {
 
-	params := []string{"clusterUUID", "clusterRegion", "cpuLimit", "memLimit", "cpuRequest", "memRequest"}
+	params := []string{"clusterUUID", "clusterRegion"}
 
 	for _, p := range params {
 		if _, ok := c.overrideParams[p]; !ok {
