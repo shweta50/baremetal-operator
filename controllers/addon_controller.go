@@ -28,7 +28,6 @@ import (
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/pkg/addons"
 	addonerr "github.com/platform9/pf9-addon-operator/pkg/errors"
-	"github.com/platform9/pf9-addon-operator/pkg/watch"
 )
 
 const (
@@ -60,7 +59,6 @@ func (r *AddonReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	operation := getOperation(&addon)
-	watch.SetAddonOperation(addon.Spec.Type)
 
 	w, err := addons.New(r.Client)
 	if err != nil {

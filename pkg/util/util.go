@@ -56,10 +56,7 @@ const (
 	DisableWatchVal = "true"
 
 	watchSleepEnvVar  = "WATCH_SLEEP_SECS"
-	watchSleepDefault = "60"
-
-	watchAddonChangeEnvVar  = "WATCH_ADDON_CHANGE_SECS"
-	watchAddonChangeDefault = "20"
+	watchSleepDefault = "300"
 
 	maxSyncErrorCountEnvVar  = "MAX_SYNC_ERR_COUNT"
 	maxSyncErrorCountDefault = "10"
@@ -94,10 +91,6 @@ func CheckEnvVarsOnBootup() {
 		panic(err)
 	}
 
-	if _, err = getEnvInt(watchAddonChangeEnvVar, watchAddonChangeDefault); err != nil {
-		panic(err)
-	}
-
 	if _, err = getEnvInt(maxSyncErrorCountEnvVar, maxSyncErrorCountDefault); err != nil {
 		panic(err)
 	}
@@ -117,12 +110,6 @@ func GetHealthCheckSleep() int {
 func GetWatchSleep() int {
 	val, _ := getEnvInt(watchSleepEnvVar, watchSleepDefault)
 	return val
-}
-
-// GetWatchAddonChangeInterval gets addon change interval
-func GetWatchAddonChangeInterval() int64 {
-	val, _ := getEnvInt(watchAddonChangeEnvVar, watchAddonChangeDefault)
-	return int64(val)
 }
 
 // GetSyncErrorCount gets max sync error count

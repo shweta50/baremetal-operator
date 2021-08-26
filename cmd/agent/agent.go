@@ -84,11 +84,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg, ctx := errgroup.WithContext(ctx)
-	// Cannot use wg.Go here, because in the health check routine there is no one who will
-	// wait on stopc channel created by ctx.Done(), if we still use wg.Go here, it will block
-	// and does not exit gracefully
-	go healthCheck(ctx)
-	//wg.Go(func() error { return healthCheck(ctx) })
+
+	wg.Go(func() error { return healthCheck(ctx, ctx.Done()) })
 	wg.Go(func() error { return watchResources(ctx, ctx.Done()) })
 
 	log.Info("Starting manager...")
@@ -129,6 +126,8 @@ func watchResources(ctx context.Context, stopc <-chan struct{}) error {
 		return nil
 	}
 
+	watchInterval := util.GetWatchSleep()
+
 	// Wait for a while before starting watch on resources,
 	// during bootstrap all addons deployed by the operator, we want to avoid those notifications
 	time.Sleep(90 * time.Second)
@@ -145,13 +144,21 @@ func watchResources(ctx context.Context, stopc <-chan struct{}) error {
 		panic("Cannot create watch")
 	}
 
-	if err := w.Run(stopc); err != nil {
-		log.Error(err, "unable to start watch")
+	ticker := time.NewTicker(time.Second * time.Duration(watchInterval))
+	for {
+		select {
+		case <-ticker.C:
+			if err := w.Run(); err != nil {
+				log.Error(err, "unable to start watch")
+			}
+		case <-stopc:
+			log.Info("quiting watchResources")
+			return nil
+		}
 	}
-	return nil
 }
 
-func healthCheck(ctx context.Context) error {
+func healthCheck(ctx context.Context, stopc <-chan struct{}) error {
 
 	disableSync := os.Getenv(util.DisableSunpikeEnvVar)
 	if disableSync == util.DisableSunpikeVal {
@@ -182,27 +189,32 @@ func healthCheck(ctx context.Context) error {
 	}
 	errCount := 0
 
+	ticker := time.NewTicker(time.Second * time.Duration(healthCheckInterval))
 	for {
-		if err := w.HealthCheck(ctx, clusterID, projectID); err != nil {
-			log.Errorf("Error in healthcheck: %s", err)
+		select {
+		case <-ticker.C:
+			if err := w.HealthCheck(ctx, clusterID, projectID); err != nil {
+				log.Errorf("Error in healthcheck: %s", err)
 
-			// In case there is an error reaching the du_fqdn then maintain a count
-			// beyond which restart the pod, normally client-go works even if the network
-			// goes away for a while and is restored, but in some special cases we had
-			// to ensure pod restart, see: PMK-3821
-			if addonerr.IsListClusterAddons(err) || addonerr.IsGenKeystoneToken(err) {
-				errCount++
+				// In case there is an error reaching the du_fqdn then maintain a count
+				// beyond which restart the pod, normally client-go works even if the network
+				// goes away for a while and is restored, but in some special cases we had
+				// to ensure pod restart, see: PMK-3821
+				if addonerr.IsListClusterAddons(err) || addonerr.IsGenKeystoneToken(err) {
+					errCount++
 
-				log.Errorf("List ClusterAddons error count: %d of %d", errCount, maxSyncErrCount)
-				if errCount > maxSyncErrCount {
-					panic("Error listing ClusterAddon objects from sunpike")
+					log.Errorf("List ClusterAddons error count: %d of %d", errCount, maxSyncErrCount)
+					if errCount > maxSyncErrCount {
+						panic("Error listing ClusterAddon objects from sunpike")
+					}
 				}
+			} else {
+				errCount = 0
 			}
-		} else {
-			errCount = 0
-		}
-		time.Sleep(time.Duration(healthCheckInterval) * time.Second)
-	}
 
-	return nil
+		case <-stopc:
+			log.Info("quiting healthCheck")
+			return nil
+		}
+	}
 }
