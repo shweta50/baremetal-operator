@@ -27,7 +27,6 @@ import (
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/pkg/apply"
-	"github.com/platform9/pf9-addon-operator/pkg/objects"
 	appsv1 "k8s.io/api/apps/v1"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -63,7 +62,20 @@ const (
 
 	// DuFqdnEnvVar DU FQDN
 	DuFqdnEnvVar = "DU_FQDN"
+
+	unitTestEnvVar = "UNIT_TEST"
 )
+
+var templateDir, createDir string
+
+func init() {
+	if os.Getenv(unitTestEnvVar) == "" {
+		templateDir = "/addon_templates/"
+	} else {
+		templateDir = "../../addon_templates/"
+	}
+	createDir = templateDir + "create/"
+}
 
 // Labels is used to add lables to a resource
 type Labels struct {
@@ -183,8 +195,8 @@ func UpdateCACerts() error {
 func EnsureDirStructure(name, version string) (string, string, error) {
 
 	versionDir := name + "/" + version
-	inputPath := filepath.Join(objects.TemplateDir, versionDir)
-	outputPath := filepath.Join(objects.CreateDir, versionDir)
+	inputPath := filepath.Join(templateDir, versionDir)
+	outputPath := filepath.Join(createDir, versionDir)
 
 	if err := DirExists(inputPath); err != nil {
 		return "", "", err

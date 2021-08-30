@@ -1,14 +1,15 @@
 {
-    "apiVersion": "agent.pf9.io/v1",
+    "apiVersion": "agent.pf9.io/v1alpha2",
     "kind": "Addon",
     "metadata": {
-        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-metallb",
+        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-luigi",
         "namespace": "default"
     },
     "spec": {
         "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
-        "type": "metallb",
-        "version": "0.9.7",
+        "override": {},
+        "type": "luigi",
+        "version": "0.2.2",
         "watch": true
     }
 }

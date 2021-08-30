@@ -1,9 +1,7 @@
-package tests
+package addonstest
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,11 +10,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
 	"github.com/platform9/pf9-addon-operator/pkg/addons"
+	util "github.com/platform9/pf9-addon-operator/tests/util"
 )
 
 var (
@@ -30,54 +28,6 @@ func init() {
 	agentv1.AddToScheme(scheme)
 }
 
-func getAddon(fileName string) (*agentv1.Addon, error) {
-	addon := &agentv1.Addon{}
-
-	text, err := ioutil.ReadFile("test_data/" + fileName)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(text, addon); err != nil {
-		return nil, err
-	}
-
-	return addon, nil
-}
-
-func getSvc(ns, name string, c client.Client) (*corev1.Service, error) {
-	svc := corev1.Service{}
-
-	err := c.Get(ctx, client.ObjectKey{
-		Namespace: ns,
-		Name:      name,
-	}, &svc)
-	return &svc, err
-}
-
-func createAddonConfigSecret(c client.Client) error {
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "pf9-addons",
-			Name:      "addon-config",
-		},
-		Data: map[string][]byte{
-			"dnsIP":          []byte("10.21.0.2"),
-			"clientID":       []byte("QjgxMDI2RjItMjY3MS00REU3LTk1M0QtODg0NDc5QkFBM0ZCCg=="),
-			"clientSecret":   []byte("MDEzQ0FGMUYtNDc1Ni00N0ZBLUJCMzItMDM2RUE4MzZFOUFFCg=="),
-			"resourceGroup":  []byte("MTEwQjdGRkYtQzY0RC00MDU5LTg5RUYtNjIyM0Y5N0NBM0M5Cg=="),
-			"subscriptionID": []byte("MTZDQjkyMTgtRTA3RC00NzNFLUE5MEEtOTNDNDEyMzFFRjNCCg=="),
-			"tenantID":       []byte("Nzc5NEI2QkItMEI1RS00NzgxLTkzNjQtNjZCNzlEQTVEQ0ZECg=="),
-		},
-	}
-
-	err := c.Create(context.Background(), secret)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func TestCoreDNS(t *testing.T) {
 	ns := "kube-system"
 	name := "kube-dns"
@@ -88,11 +38,12 @@ func TestCoreDNS(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//Default coredns without additional DNS config
-	addon, err := getAddon("coredns.addon")
+	addon, err := util.GetAddon("coredns.addon")
 	assert.Equal(t, nil, err)
 
 	addonWithDNS := addon.DeepCopy()
 	addonWithIP := addon.DeepCopy()
+	addonWithDNSEnc := addon.DeepCopy()
 
 	addonWithDNS.Spec.Override.Params = append(addonWithDNS.Spec.Override.Params, agentv1.Params{
 		Name:  "base64EncAdditionalDnsConfig",
@@ -105,19 +56,27 @@ func TestCoreDNS(t *testing.T) {
 		Value: "10.21.0.1",
 	})
 
+	addonWithDNSEnc.Spec.Override.Params = append(addonWithDNSEnc.Spec.Override.Params, agentv1.Params{
+		Name:  "base64EncEntireDnsConfig",
+		Value: "Ljo1MzAwIHsKICAgIGVycm9ycwogICAgaGVhbHRoIHsKICAgICAgICBsYW1lZHVjayA1cwogICAgfQogICAgcmVhZHkKICAgIGt1YmVybmV0ZXMgY2x1c3Rlci5sb2NhbCBpbi1hZGRyLmFycGEgaXA2LmFycGEgewogICAgICAgIHBvZHMgaW5zZWN1cmUKICAgICAgICBmYWxsdGhyb3VnaCBpbi1hZGRyLmFycGEgaXA2LmFycGEKICAgICAgICB0dGwgMzAKICAgIH0KICAgIHByb21ldGhldXMgOjkxNTMKICAgIGZvcndhcmQgLiAvZXRjL3Jlc29sdi5jb25mIHsKICAgICAgICBtYXhfY29uY3VycmVudCAxMDAwCiAgICB9CmNhY2hlIDMwCiAgICBsb29wCiAgICByZWxvYWQKICAgIGxvYWRiYWxhbmNlCn0K",
+	})
+
 	//Addon for which dnsServer is specified
 	err = w.SyncEvent(addonWithIP, "install")
 	assert.Equal(t, nil, err)
 
-	svc, err := getSvc(ns, name, client)
+	svc, err := util.GetSvc(ctx, ns, name, client)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "10.21.0.1", svc.Spec.ClusterIP)
+
+	err = w.SyncEvent(addon, "upgrade")
+	assert.Equal(t, nil, err)
 
 	err = w.SyncEvent(addonWithIP, "uninstall")
 	assert.Equal(t, nil, err)
 
 	//Create addon-config secret
-	err = createAddonConfigSecret(client)
+	err = util.CreateAddonConfigSecret(ctx, client)
 	assert.Equal(t, nil, err)
 
 	//Addon for which dnsServer is not specified, should get it from addon-config
@@ -127,9 +86,12 @@ func TestCoreDNS(t *testing.T) {
 	err = w.SyncEvent(addon, "install")
 	assert.Equal(t, nil, err)
 
-	svc, err = getSvc(ns, name, client)
+	svc, err = util.GetSvc(ctx, ns, name, client)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "10.21.0.2", svc.Spec.ClusterIP)
+
+	err = w.SyncEvent(addon, "upgrade")
+	assert.Equal(t, nil, err)
 
 	err = w.SyncEvent(addon, "uninstall")
 	assert.Equal(t, nil, err)
@@ -138,8 +100,21 @@ func TestCoreDNS(t *testing.T) {
 	err = w.SyncEvent(addonWithDNS, "install")
 	assert.Equal(t, nil, err)
 
+	err = w.SyncEvent(addon, "upgrade")
+	assert.Equal(t, nil, err)
+
 	err = w.SyncEvent(addonWithDNS, "uninstall")
 	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addonWithDNSEnc, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "upgrade")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addonWithDNSEnc, "uninstall")
+	assert.Equal(t, nil, err)
+
 }
 
 func TestDashboard(t *testing.T) {
@@ -151,7 +126,7 @@ func TestDashboard(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon, _ := getAddon("dashboard.addon")
+	addon, _ := util.GetAddon("dashboard.addon")
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
 
@@ -189,7 +164,7 @@ func TestMetricsServer(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon, _ := getAddon("metric-server.addon")
+	addon, _ := util.GetAddon("metric-server.addon")
 
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
@@ -210,8 +185,9 @@ func TestMetallb(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon, _ := getAddon("metallb.addon")
+	addon, _ := util.GetAddon("metallb.addon")
 	addonMultiRange := addon.DeepCopy()
+	addonWithBase64Enc := addon.DeepCopy()
 
 	addon.Spec.Override.Params = append(addon.Spec.Override.Params, agentv1.Params{
 		Name:  "MetallbIpRange",
@@ -221,6 +197,11 @@ func TestMetallb(t *testing.T) {
 	addonMultiRange.Spec.Override.Params = append(addonMultiRange.Spec.Override.Params, agentv1.Params{
 		Name:  "MetallbIpRange",
 		Value: "10.0.0.21-10.0.0.25, 10.0.0.30-10.0.0.32, 10.0.0.40-10.0.0.42",
+	})
+
+	addonWithBase64Enc.Spec.Override.Params = append(addonMultiRange.Spec.Override.Params, agentv1.Params{
+		Name:  "base64EncMetallbConfig",
+		Value: "YWRkcmVzcy1wb29sczoKLSBuYW1lOiBkZWZhdWx0CiAgcHJvdG9jb2w6IGxheWVyMgogIGFkZHJlc3NlczoKICAgLSAxOTIuMTY4LjUuMC0xOTIuMTY4LjYuMAotIG5hbWU6IHBvb2wKICBwcm90b2NvbDogbGF5ZXIyCiAgYWRkcmVzc2VzOgogICAtIDE5Mi4xNjguNy4wLTE5Mi4xNjguOC4wCg==",
 	})
 
 	err = client.Create(ctx, addon)
@@ -238,6 +219,12 @@ func TestMetallb(t *testing.T) {
 	err = w.SyncEvent(addonMultiRange, "uninstall")
 	assert.Equal(t, nil, err)
 
+	err = w.SyncEvent(addonWithBase64Enc, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addonWithBase64Enc, "uninstall")
+	assert.Equal(t, nil, err)
+
 }
 
 func TestAWSAutoScaler(t *testing.T) {
@@ -249,7 +236,7 @@ func TestAWSAutoScaler(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon, _ := getAddon("cas-aws.addon")
+	addon, _ := util.GetAddon("cas-aws.addon")
 
 	err = client.Create(ctx, addon)
 	assert.Equal(t, nil, err)
@@ -270,7 +257,7 @@ func TestAzureAutoScaler(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	addon, _ := getAddon("cas-azure.addon")
+	addon, _ := util.GetAddon("cas-azure.addon")
 	addonWithoutParams := addon.DeepCopy()
 
 	err = client.Create(ctx, addon)
@@ -283,7 +270,7 @@ func TestAzureAutoScaler(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//Create addon-config secret
-	err = createAddonConfigSecret(client)
+	err = util.CreateAddonConfigSecret(ctx, client)
 	assert.Equal(t, nil, err)
 
 	addonWithoutParams.Spec.Override.Params = []agentv1.Params{
@@ -303,4 +290,115 @@ func TestAzureAutoScaler(t *testing.T) {
 	err = w.SyncEvent(addonWithoutParams, "uninstall")
 	assert.Equal(t, nil, err)
 
+}
+
+func TestKubevirt(t *testing.T) {
+
+	client := fake.NewFakeClientWithScheme(scheme)
+
+	w, err := addons.New(client)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	addon, _ := util.GetAddon("kubevirt.addon")
+
+	err = client.Create(ctx, addon)
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "uninstall")
+	assert.Equal(t, nil, err)
+}
+
+func TestMonitoring(t *testing.T) {
+
+	client := fake.NewFakeClientWithScheme(scheme)
+
+	w, err := addons.New(client)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	addon, _ := util.GetAddon("monitoring.addon")
+	addonWithoutParams := addon.DeepCopy()
+
+	err = client.Create(ctx, addon)
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "uninstall")
+	assert.Equal(t, nil, err)
+
+	//Create addon-config secret
+	err = util.CreateAddonConfigSecret(ctx, client)
+	assert.Equal(t, nil, err)
+
+	addonWithoutParams.Spec.Override.Params = []agentv1.Params{
+		agentv1.Params{
+			Name:  "StorageClassName",
+			Value: "default",
+		},
+		agentv1.Params{
+			Name:  "pvcSize",
+			Value: "1Gi",
+		},
+		agentv1.Params{
+			Name:  "retentionTime",
+			Value: "7d",
+		},
+	}
+
+	err = w.SyncEvent(addonWithoutParams, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addonWithoutParams, "uninstall")
+	assert.Equal(t, nil, err)
+
+}
+
+func TestLuigi(t *testing.T) {
+
+	client := fake.NewFakeClientWithScheme(scheme)
+
+	w, err := addons.New(client)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	addon, _ := util.GetAddon("luigi.addon")
+
+	err = client.Create(ctx, addon)
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "uninstall")
+	assert.Equal(t, nil, err)
+}
+
+func TestProfileAgent(t *testing.T) {
+
+	client := fake.NewFakeClientWithScheme(scheme)
+
+	w, err := addons.New(client)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	addon, _ := util.GetAddon("pf9-profile-agent.addon")
+
+	err = client.Create(ctx, addon)
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "uninstall")
+	assert.Equal(t, nil, err)
 }

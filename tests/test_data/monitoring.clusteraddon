@@ -1,0 +1,34 @@
+{
+    "apiVersion": "sunpike.platform9.com/v1alpha2",
+    "kind": "ClusterAddon",
+    "metadata": {
+        "labels": {
+            "sunpike.pf9.io/cluster": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+            "type": "monitoring"
+        },
+        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-monitoring",
+        "namespace": "default"
+    },
+    "spec": {
+        "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+        "type": "monitoring",
+        "version": "0.46.0",
+        "watch": true,
+        "override": {
+            "params": [
+                {
+                    "name": "StorageClassName",
+                    "value": "default"
+                },
+                {
+                    "name": "pvcSize",
+                    "value": "1Gi"
+                },
+                {
+                    "name": "retentionTime",
+                    "value": "7d"
+                }
+            ]
+        }
+    }
+}

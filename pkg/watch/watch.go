@@ -139,6 +139,7 @@ func (w *Watch) waitforAddon(name string, observedGeneration int64) error {
 			log.Infof("Watch: Addon %s converged after triggering it", name)
 			return nil
 		}
+		log.Infof("Watch: Addon %s waiting to converge: %d %d", name, addon.Status.ObservedGeneration, observedGeneration)
 	}
 
 	return fmt.Errorf("Watch: Addon %s did not converge after triggering it", name)

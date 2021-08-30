@@ -35,7 +35,7 @@ compile:
 
 unit-tests: 
 	echo "Running Unit tests"; \
-	DU_FQDN=localhost go test ./tests/
+	UNIT_TEST=true go test ./tests/...
 
 build: compile
 	echo "Building docker image"; \

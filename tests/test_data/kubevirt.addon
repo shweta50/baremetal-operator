@@ -1,0 +1,15 @@
+{
+    "apiVersion": "agent.pf9.io/v1alpha2",
+    "kind": "Addon",
+    "metadata": {
+        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-kubevirt",
+        "namespace": "default"
+    },
+    "spec": {
+        "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+        "override": {},
+        "type": "kubevirt",
+        "version": "0.40.0",
+        "watch": true
+    }
+}

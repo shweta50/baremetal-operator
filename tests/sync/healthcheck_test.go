@@ -1,6 +1,7 @@
-package tests
+package healthcheck
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -26,6 +27,7 @@ import (
 )
 
 var (
+	ctx           = context.Background()
 	localScheme   = runtime.NewScheme()
 	sunpikeScheme = runtime.NewScheme()
 	//local client represents PMK cluster
@@ -49,7 +51,7 @@ func newMux() *mux.Router {
 }
 
 func getFakeSunpikeKubeCfg(url string) (*rest.Config, error) {
-	data, err := ioutil.ReadFile("fake_kubeconfig.template")
+	data, err := ioutil.ReadFile("../fake_kubeconfig.template")
 	if err != nil {
 		return nil, err
 	}
@@ -114,12 +116,12 @@ func putFakeClusterAddons(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(clsAddonUpdate)
 
 	key := client.ObjectKey{
-		Namespace: "pf9-addons",
+		Namespace: "default",
 		Name:      clsAddonUpdate.Name,
 	}
 
 	if err := sunpikeClient.Get(ctx, key, clsAddonGet); err != nil {
-		fmt.Printf("Failed to get addons: %s", err.Error())
+		fmt.Printf("Failed to get addons: %s in putFakeClusterAddons", err.Error())
 		return
 	}
 
@@ -149,18 +151,18 @@ func listFakeClusterAddons(w http.ResponseWriter, r *http.Request) {
 }
 
 func addAPI(m *mux.Router) {
-	m.HandleFunc("/qbert/v4beta1/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons/{cluster}", getFakeClusterAddons).Methods("GET")
-	m.HandleFunc("/qbert/v4beta1/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons", postFakeClusterAddons).Methods("POST")
-	m.HandleFunc("/qbert/v4beta1/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons/{cluster}", putFakeClusterAddons).Methods("PUT")
-	m.HandleFunc("/qbert/v4beta1/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons/{cluster}", putFakeClusterAddons).Methods("PATCH")
-	m.HandleFunc("/qbert/v4beta1/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons", listFakeClusterAddons).Methods("GET")
+	m.HandleFunc("/qbert/v4/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons/{cluster}", getFakeClusterAddons).Methods("GET")
+	m.HandleFunc("/qbert/v4/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons", postFakeClusterAddons).Methods("POST")
+	m.HandleFunc("/qbert/v4/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons/{cluster}", putFakeClusterAddons).Methods("PUT")
+	m.HandleFunc("/qbert/v4/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons/{cluster}", putFakeClusterAddons).Methods("PATCH")
+	m.HandleFunc("/qbert/v4/{projectid}/sunpike/apis/sunpike.platform9.com/v1alpha2/namespaces/default/clusteraddons", listFakeClusterAddons).Methods("GET")
 }
 
 func createClusterAddonFromFile(fileName string) error {
 
 	clsAddon := &sunpikev1alpha2.ClusterAddon{}
 
-	text, err := ioutil.ReadFile("test_data/" + fileName)
+	text, err := ioutil.ReadFile("../test_data/" + fileName)
 	if err != nil {
 		return err
 	}
@@ -183,7 +185,7 @@ func updateClusterAddon(clsAddon *sunpikev1alpha2.ClusterAddon) error {
 	clsAddonGet := &sunpikev1alpha2.ClusterAddon{}
 
 	key := client.ObjectKey{
-		Namespace: "pf9-addons",
+		Namespace: "default",
 		Name:      clsAddon.Name,
 	}
 
@@ -262,7 +264,7 @@ func TestHealthCheck(t *testing.T) {
 	clsAddon := sunpikev1alpha2.ClusterAddon{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "uuid-coredns",
-			Namespace:  "pf9-addons",
+			Namespace:  "default",
 			Finalizers: []string{"pf9.io/addons"},
 		},
 		Spec: sunpikev1alpha2.ClusterAddonSpec{
@@ -279,12 +281,17 @@ func TestHealthCheck(t *testing.T) {
 
 	//Check if local Addon object has been created
 	addon := &agentv1.Addon{}
-	key := client.ObjectKey{
+	addonKey := client.ObjectKey{
 		Namespace: "pf9-addons",
 		Name:      "uuid-coredns",
 	}
 
-	err = localClient.Get(ctx, key, addon)
+	clsAddonKey := client.ObjectKey{
+		Namespace: "default",
+		Name:      "uuid-coredns",
+	}
+
+	err = localClient.Get(ctx, addonKey, addon)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "uuid-coredns", addon.Name)
 
@@ -298,7 +305,7 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//Check if local addon object has been updated
-	err = localClient.Get(ctx, key, addon)
+	err = localClient.Get(ctx, addonKey, addon)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "1.9.0", addon.Spec.Version)
 
@@ -312,7 +319,7 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//Check if cluster addon status has been updated
-	err = sunpikeClient.Get(ctx, key, &clsAddon)
+	err = sunpikeClient.Get(ctx, clsAddonKey, &clsAddon)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, sunpikev1alpha2.AddonPhase("Installed"), clsAddon.Status.Phase)
 
@@ -327,10 +334,10 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//Check if local addon object has been deleted
-	err = localClient.Get(ctx, key, addon)
+	err = localClient.Get(ctx, addonKey, addon)
 	assert.NotEqual(t, nil, err)
 
-	err = sunpikeClient.Get(ctx, key, &clsAddon)
+	err = sunpikeClient.Get(ctx, clsAddonKey, &clsAddon)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, sunpikev1alpha2.AddonPhase("Uninstalling"), clsAddon.Status.Phase)
 
@@ -339,7 +346,7 @@ func TestHealthCheck(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	//Check if ClusterAddon object has been updated to Uninstalled
-	err = sunpikeClient.Get(ctx, key, &clsAddon)
+	err = sunpikeClient.Get(ctx, clsAddonKey, &clsAddon)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, sunpikev1alpha2.AddonPhase("Uninstalled"), clsAddon.Status.Phase)
 }
