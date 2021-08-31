@@ -42,7 +42,8 @@ func newCoreDNS(c client.Client, version string, params map[string]interface{}) 
 //overrideRegistry checks if we need to override container registry values
 func (c *CoreDNSClient) overrideRegistry() {
 	c.overrideParams[templateK8sRegistry] = util.GetRegistry(envVarK8sRegistry, defaultK8sRegistry)
-	log.Infof("Using container registry: %s", c.overrideParams[templateK8sRegistry])
+
+	log.Infof("Using k8s registry: %s", c.overrideParams[templateK8sRegistry])
 }
 
 //ValidateParams validates params of an addon

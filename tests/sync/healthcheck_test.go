@@ -269,7 +269,7 @@ func TestHealthCheck(t *testing.T) {
 		},
 		Spec: sunpikev1alpha2.ClusterAddonSpec{
 			ClusterID: "uuid",
-			Version:   "1.7.0",
+			Version:   "1.8.0",
 			Type:      "coredns",
 		},
 	}
