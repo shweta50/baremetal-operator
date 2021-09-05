@@ -15,9 +15,9 @@ spec:
     spec:
       containers:
 {{- if .DockerRegistry }}
-      - image: {{ .DockerRegistry }}/nginx:stable
+      - image: {{ .DockerRegistry }}/nginx:1.7.9
 {{- else }}
-      - image: nginx:stable
+      - image: nginx:1.7.9
 {{- end }}
         imagePullPolicy: IfNotPresent
         name: proxy
