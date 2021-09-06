@@ -1,3 +1,4 @@
+---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -15,7 +16,7 @@ spec:
         message: 'Evicted pod: {{ $labels.event_namespace }}/{{ $labels.event_name
           }}::{{ $labels.event_message }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_reason="Evicted"}
+        increase(kubernetes_events{event_kind="Pod", event_reason="Evicted"}[10m]) > 0
       for: 5m
       labels:
         severity: critical
@@ -24,7 +25,7 @@ spec:
         message: 'Failed to create resource: {{ $labels.event_namespace }}/{{ $labels.event_name
           }}::{{ $labels.event_message }}'
       expr: |
-        kubernetes_events{event_reason="FailedCreate",event_type="Warning"}
+        increase(kubernetes_events{event_reason="FailedCreate",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: warning
@@ -33,7 +34,7 @@ spec:
         message: 'Failed to schedule pod: {{ $labels.event_namespace }}/{{ $labels.event_name
           }}::{{ $labels.event_message }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_reason="FailedScheduling",event_type="Warning"}
+        increase(kubernetes_events{event_kind="Pod", event_reason="FailedScheduling",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: warning
@@ -42,7 +43,7 @@ spec:
         message: 'Pod restaring with error: {{ $labels.event_namespace }}/{{ $labels.event_name
           }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_reason="BackOff",event_type="Warning"}
+        increase(kubernetes_events{event_kind="Pod", event_reason="BackOff",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: warning
@@ -51,7 +52,7 @@ spec:
         message: 'Failed to pull image: {{ $labels.event_namespace }}/{{ $labels.event_name
           }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_message="Error: ImagePullBackOff", event_reason="Failed",event_type="Warning"}
+        increase(kubernetes_events{event_kind="Pod", event_message="Error: ImagePullBackOff", event_reason="Failed",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: critical
@@ -60,7 +61,7 @@ spec:
         message: 'Failed to mount volume on pod: {{ $labels.event_metaname }}::{{
           $labels.event_message }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_reason="FailedMount",event_type="Warning"} != 0
+        increase(kubernetes_events{event_kind="Pod", event_reason="FailedMount",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: critical
@@ -69,7 +70,7 @@ spec:
         message: 'Failed to attach volume to pod: {{ $labels.event_metaname }}::{{
           $labels.event_message }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_reason="FailedAttachVolume",event_type="Warning"}
+        increase(kubernetes_events{event_kind="Pod", event_reason="FailedAttachVolume",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: critical
@@ -78,7 +79,7 @@ spec:
         message: 'Failed to provision PVC: {{ $labels.event_metaname }}::{{ $labels.event_message
           }}'
       expr: |2
-         kubernetes_events{event_kind="PersistentVolumeClaim", event_reason="ProvisioningFailed",event_type="Warning"} != 0
+         increase(kubernetes_events{event_kind="PersistentVolumeClaim", event_reason="ProvisioningFailed",event_type="Warning"}[10m]) > 0
       for: 5m
       labels:
         severity: critical
@@ -86,7 +87,7 @@ spec:
       annotations:
         message: 'Pending PVC found: {{ $labels.persistentvolumeclaim }}'
       expr: |
-        kube_persistentvolumeclaim_status_phase{phase="Pending"}
+        kube_persistentvolumeclaim_status_phase{phase="Pending"} > 0
       for: 5m
       labels:
         severity: warning
@@ -95,7 +96,7 @@ spec:
         message: '{{ $labels.event_message }} {{ $labels.event_namespace }}/{{ $labels.event_objname
           }}'
       expr: |
-        kubernetes_events{event_kind="Pod", event_reason="Unhealthy",event_type="Warning"} > 3
+        increase(kubernetes_events{event_kind="Pod", event_reason="Unhealthy",event_type="Warning"}[10m]) > 0
       for: 15m
       labels:
         severity: warning
