@@ -141,6 +141,7 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           limits:
+            cpu: 500m
             memory: {{ .dnsMemoryLimit }}
           requests:
             cpu: 100m
