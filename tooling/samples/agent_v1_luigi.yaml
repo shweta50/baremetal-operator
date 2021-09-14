@@ -5,5 +5,5 @@ metadata:
 spec:
   clusterID: d4b9d516-c44c-11eb-8529-0242ac130003
   type: "luigi"
-  version: "0.2.2"
+  version: "0.3.0"
   watch: true
