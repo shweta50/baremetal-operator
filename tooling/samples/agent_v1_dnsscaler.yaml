@@ -1,0 +1,20 @@
+apiVersion: agent.pf9.io/v1
+kind: Addon
+metadata:
+  name: dns-autoscaler
+spec:
+  version: 1.8.1
+  type: "dns-autoscaler"
+  watch: true
+  override:
+    params:
+    - name: CoresPerReplica
+      value: "256"
+    - name: NodesPerReplica
+      value: "16"
+    - name: MinReplicas
+      value: "1"      
+    - name: MaxReplicas
+      value: "10"
+    - name: PollPeriodSecs
+      value: "300"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	agentv1 "github.com/platform9/pf9-addon-operator/api/v1"
+	"github.com/platform9/pf9-addon-operator/pkg/util"
 	"github.com/platform9/pf9-qbert/sunpike/apiserver/pkg/apis/sunpike/v1alpha2"
 )
 
@@ -62,9 +64,16 @@ func New(ctx context.Context, cl client.Client) (*Watch, error) {
 func readResourcesFile() (map[string]string, error) {
 	config := Config{}
 
-	content, err := ioutil.ReadFile(resourceFile)
+	resFile := resourceFile
+
+	if os.Getenv(util.UnitTestEnvVar) == "true" {
+		resFile = strings.Replace(resFile, "/", "../../", 1)
+	}
+	log.Infof("Resource file path: %s", resFile)
+
+	content, err := ioutil.ReadFile(resFile)
 	if err != nil {
-		log.Errorf("Failed to read resources file %s %s", resourceFile, err)
+		log.Errorf("Failed to read resources file %s %s", resFile, err)
 		return nil, err
 	}
 
@@ -77,7 +86,7 @@ func readResourcesFile() (map[string]string, error) {
 
 // Run starts sync workers
 func (w *Watch) Run() error {
-	log.Info("Running watch...")
+	log.Debug("Running watch...")
 	mapAddon := map[string]string{}
 
 	addonList := &agentv1.AddonList{}

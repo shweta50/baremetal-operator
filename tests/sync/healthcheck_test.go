@@ -243,7 +243,7 @@ func TestHealthCheck(t *testing.T) {
 	//------------------------------ Test 1 --------------------------------------
 	//Newly created ClusterAddon objects during boostrap should be reflected as local Addon objects
 	//Create 6 local ClusterAddon objects
-	clsAddonManifests := []string{"coredns.clusteraddon", "dashboard.clusteraddon", "metallb.clusteraddon", "metric-server.clusteraddon", "cas-aws.clusteraddon", "cas-azure.clusteraddon"}
+	clsAddonManifests := []string{"coredns.clusteraddon", "dashboard.clusteraddon", "metallb.clusteraddon", "metric-server.clusteraddon", "cas-aws.clusteraddon", "cas-azure.clusteraddon", "dnsautoscaler.clusteraddon"}
 	for _, f := range clsAddonManifests {
 		createClusterAddonFromFile(f)
 	}
@@ -252,11 +252,11 @@ func TestHealthCheck(t *testing.T) {
 	err = w.SyncClusterAddons("clusterid", "projectid", kubeCfg)
 	assert.Equal(t, nil, err)
 
-	//Verify if 6 Addon objects have been created
+	//Verify if 7 Addon objects have been created
 	addonList := &agentv1.AddonList{}
 	err = localClient.List(ctx, addonList)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 6, len(addonList.Items))
+	assert.Equal(t, 7, len(addonList.Items))
 
 	//------------------------------ Test 2 --------------------------------------
 	//New ClusterAddon object should be reflected as local Addon object

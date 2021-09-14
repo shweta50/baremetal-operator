@@ -402,3 +402,24 @@ func TestProfileAgent(t *testing.T) {
 	err = w.SyncEvent(addon, "uninstall")
 	assert.Equal(t, nil, err)
 }
+
+func TestDNSAutoScaler(t *testing.T) {
+
+	client := fake.NewFakeClientWithScheme(scheme)
+
+	w, err := addons.New(client)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	addon, _ := util.GetAddon("dnsautoscaler.addon")
+
+	err = client.Create(ctx, addon)
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "install")
+	assert.Equal(t, nil, err)
+
+	err = w.SyncEvent(addon, "uninstall")
+	assert.Equal(t, nil, err)
+}

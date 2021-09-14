@@ -1,0 +1,26 @@
+{
+    "apiVersion": "agent.pf9.io/v1",
+    "kind": "Addon",
+    "metadata": {
+        "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-dns-autoscaler",
+        "namespace": "default"
+    },
+    "spec": {
+        "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
+        "override": {
+            "params": [
+                {
+                    "name": "corePrecendence",
+                    "value": "true"
+                },
+                {
+                    "name": "CoresPerReplica",
+                    "value": "256"
+                }
+            ]
+        },
+        "type": "dns-autoscaler",
+        "version": "1.8.1",
+        "watch": true
+    }
+}

@@ -63,13 +63,14 @@ const (
 	// DuFqdnEnvVar DU FQDN
 	DuFqdnEnvVar = "DU_FQDN"
 
-	unitTestEnvVar = "UNIT_TEST"
+	// UnitTestEnvVar if unit tests are being run
+	UnitTestEnvVar = "UNIT_TEST"
 )
 
 var templateDir, createDir string
 
 func init() {
-	if os.Getenv(unitTestEnvVar) == "" {
+	if os.Getenv(UnitTestEnvVar) == "" {
 		templateDir = "/addon_templates/"
 	} else {
 		templateDir = "../../addon_templates/"
