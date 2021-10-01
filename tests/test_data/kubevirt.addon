@@ -9,7 +9,7 @@
         "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
         "override": {},
         "type": "kubevirt",
-        "version": "0.40.0",
+        "version": "0.45.0",
         "watch": true
     }
 }

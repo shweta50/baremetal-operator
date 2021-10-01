@@ -5,5 +5,5 @@ metadata:
 spec:
   clusterID: d4b9d516-c44c-11eb-8529-0242ac130003
   type: "kubevirt"
-  version: "0.40.0"
+  version: "0.45.0"
   watch: true
