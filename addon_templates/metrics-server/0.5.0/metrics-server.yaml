@@ -118,14 +118,16 @@ spec:
             path: /readyz
             port: https
             scheme: HTTPS
-          periodSeconds: 10
+          periodSeconds: 60
+          timeoutSeconds: 5
           failureThreshold: 3
         livenessProbe:
           httpGet:
             path: /livez
             port: https
             scheme: HTTPS
-          periodSeconds: 10
+          periodSeconds: 60
+          timeoutSeconds: 5
           failureThreshold: 3
         volumeMounts:
         - mountPath: /tmp
