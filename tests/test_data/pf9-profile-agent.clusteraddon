@@ -4,7 +4,7 @@
     "metadata": {
         "labels": {
             "sunpike.pf9.io/cluster": "8494D77F-8E26-4214-98B9-AFB50D509E60",
-            "type": "kubevirt"
+            "type": "pf9-profile-agent"
         },
         "name": "8494D77F-8E26-4214-98B9-AFB50D509E60-pf9-profile-agent",
         "namespace": "default"
@@ -13,7 +13,7 @@
         "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
         "override": {},
         "type": "pf9-profile-agent",
-        "version": "1.0.0",
+        "version": "2.0.1",
         "watch": true
     }
 }

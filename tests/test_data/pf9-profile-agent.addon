@@ -9,7 +9,7 @@
         "clusterID": "8494D77F-8E26-4214-98B9-AFB50D509E60",
         "override": {},
         "type": "pf9-profile-agent",
-        "version": "1.0.0",
+        "version": "2.0.1",
         "watch": true
     }
 }
