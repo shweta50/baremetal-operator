@@ -41,6 +41,8 @@ func getAddonClient(mode, version string, params map[string]interface{}, c clien
 		instance = newProfileAgent(c, version, params)
 	case "dns-autoscaler":
 		instance = newDNSScaler(c, version, params)
+	case "metal3":
+		instance = newMetal3(c, version, params)
 
 	default:
 		log.Errorf("Mode %s is not supported", mode)

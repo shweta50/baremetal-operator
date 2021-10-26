@@ -278,7 +278,7 @@ func ApplyYaml(path string, c client.Client) error {
 	}
 
 	for _, obj := range resourceList {
-		log.Infof("Applying %s name: %s", obj.GetKind(), obj.GetName())
+		log.Infof("Applying %s name: %s (namespace: %s, api: %s)", obj.GetKind(), obj.GetName(), obj.GetNamespace(), obj.GetAPIVersion())
 		err := apply.ApplyObject(context.Background(), c, obj)
 		if err != nil {
 			log.Error(err, "Error applying unstructured object")

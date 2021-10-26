@@ -1,0 +1,197 @@
+apiVersion: v1
+data:
+  DEPLOY_KERNEL_URL: '"https://platform9-ironic-images.s3-us-west-1.amazonaws.com/Deploy+Images/centos-ironic-agent.kernel"'
+  DEPLOY_RAMDISK_URL: '"https://platform9-ironic-images.s3-us-west-1.amazonaws.com/Deploy+Images/centos-ironic-agent.initramfs"'
+  DHCP_RANGE: 192.168.52.230,192.168.52.250
+  HTTP_PORT: "6180"
+  INSPECTOR_REVERSE_PROXY_SETUP: "false"
+  IRONIC_ENDPOINT: http://192.168.52.204:6385/v1/
+  IRONIC_FAST_TRACK: "true"
+  IRONIC_INSPECTOR_ENDPOINT: http://192.168.52.204:5050/v1/
+  IRONIC_INSPECTOR_VLAN_INTERFACES: all
+  IRONIC_KERNEL_PARAMS: console=ttyS0
+  PROVISIONING_INTERFACE: br-ironic
+  RESTART_CONTAINER_CERTIFICATE_UPDATED: "false"
+kind: ConfigMap
+metadata:
+  name: ironic-bmo-configmap
+---
+apiVersion: v1
+data:
+  HTTP_BASIC_HTPASSWD: t33ZK0hX3bzA:$2y$05$0UboEZXSDkDg/vJagT0RBel4M5UO.ejpzNvWj0xtY6pe0QBFY7cyy
+kind: ConfigMap
+metadata:
+  name: ironic-htpasswd-configmap
+---
+apiVersion: v1
+data:
+  HTTP_BASIC_HTPASSWD: XCMPyB1V9WwR:$2y$05$LsrDnEuIVXenKmQHlddznesyi4boAQCfriPAaC63FaUJNgWT203V.
+kind: ConfigMap
+metadata:
+  name: ironic-inspector-htpasswd-configmap
+---
+apiVersion: v1
+data:
+  auth-config: W2lyb25pY10KYXV0aF90eXBlPWh0dHBfYmFzaWMKdXNlcm5hbWU9CnBhc3N3b3JkPQ==
+kind: Secret
+metadata:
+  name: ironic-auth-config-secret
+type: Opaque
+---
+apiVersion: v1
+data:
+  auth-config: W2luc3BlY3Rvcl0KYXV0aF90eXBlPWh0dHBfYmFzaWMKdXNlcm5hbWU9CnBhc3N3b3JkPQ==
+kind: Secret
+metadata:
+  name: ironic-inspector-auth-config-secret
+type: Opaque
+---
+apiVersion: v1
+data:
+  auth-config: W2pzb25fcnBjXQphdXRoX3R5cGU9aHR0cF9iYXNpYwp1c2VybmFtZT0KcGFzc3dvcmQ9Cmh0dHBfYmFzaWNfdXNlcm5hbWU9Cmh0dHBfYmFzaWNfcGFzc3dvcmQ9
+kind: Secret
+metadata:
+  name: ironic-rpc-auth-config-secret
+type: Opaque
+---
+apiVersion: v1
+data:
+  password: Y2hhbmdlbWU=
+kind: Secret
+metadata:
+  name: mariadb-password-ftkgc8tmkc
+type: Opaque
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: baremetal-operator-ironic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: baremetal-operator-ironic
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: baremetal-operator-ironic
+    spec:
+      containers:
+      - command:
+        - /bin/runironic-api
+        env:
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mariadb-password-ftkgc8tmkc
+        envFrom:
+        - configMapRef:
+            name: ironic-htpasswd-configmap
+        - configMapRef:
+            name: ironic-bmo-configmap
+        image: quay.io/metal3-io/ironic
+        imagePullPolicy: Always
+        name: ironic-api
+        volumeMounts:
+        - mountPath: /auth/ironic-rpc
+          name: ironic-rpc-auth-config
+          readOnly: true
+        - mountPath: /shared
+          name: ironic-data-volume
+      - command:
+        - /bin/runironic-conductor
+        env:
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mariadb-password-ftkgc8tmkc
+        envFrom:
+        - configMapRef:
+            name: ironic-htpasswd-configmap
+        - configMapRef:
+            name: ironic-bmo-configmap
+        image: quay.io/metal3-io/ironic
+        imagePullPolicy: Always
+        name: ironic-conductor
+        volumeMounts:
+        - mountPath: /auth/ironic-inspector
+          name: ironic-inspector-auth-config
+          readOnly: true
+        - mountPath: /auth/ironic-rpc
+          name: ironic-rpc-auth-config
+          readOnly: true
+        - mountPath: /shared
+          name: ironic-data-volume
+      - command:
+        - /bin/runironic-inspector
+        envFrom:
+        - configMapRef:
+            name: ironic-inspector-htpasswd-configmap
+        - configMapRef:
+            name: ironic-bmo-configmap
+        image: quay.io/metal3-io/ironic
+        imagePullPolicy: Always
+        name: ironic-inspector
+        volumeMounts:
+        - mountPath: /auth/ironic
+          name: ironic-auth-config
+          readOnly: true
+      - command:
+        - /bin/rundnsmasq
+        envFrom:
+        - configMapRef:
+            name: ironic-bmo-configmap
+        image: quay.io/metal3-io/ironic
+        imagePullPolicy: Always
+        name: ironic-dnsmasq
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        volumeMounts:
+        - mountPath: /shared
+          name: ironic-data-volume
+      - command:
+        - /bin/runmariadb
+        env:
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mariadb-password-ftkgc8tmkc
+        - name: RESTART_CONTAINER_CERTIFICATE_UPDATED
+          valueFrom:
+            configMapKeyRef:
+              key: RESTART_CONTAINER_CERTIFICATE_UPDATED
+              name: ironic-bmo-configmap
+        image: quay.io/metal3-io/ironic
+        imagePullPolicy: Always
+        name: mariadb
+        volumeMounts:
+        - mountPath: /shared
+          name: ironic-data-volume
+      - command:
+        - /bin/runlogwatch.sh
+        image: quay.io/metal3-io/ironic
+        imagePullPolicy: Always
+        name: ironic-log-watch
+        volumeMounts:
+        - mountPath: /shared
+          name: ironic-data-volume
+      hostNetwork: true
+      volumes:
+      - name: ironic-auth-config
+        secret:
+          secretName: ironic-auth-config-secret
+      - name: ironic-inspector-auth-config
+        secret:
+          secretName: ironic-inspector-auth-config-secret
+      - name: ironic-rpc-auth-config
+        secret:
+          secretName: ironic-rpc-auth-config-secret
+      - emptyDir: {}
+        name: ironic-data-volume
