@@ -1,10 +1,3 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    control-plane: controller-manager
-  name: baremetal-operator-system
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -1293,6 +1286,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: baremetal-operator-leader-election-role
+  namespace: baremetal-operator-system
 rules:
 - apiGroups:
   - ""
@@ -1379,6 +1373,15 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - metal3.io
+  resources:
+  - hostfirmwaresettings
+  verbs:
+  - create
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -1412,6 +1415,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: baremetal-operator-leader-election-rolebinding
+  namespace: baremetal-operator-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -1419,6 +1423,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
+  namespace: baremetal-operator-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -1431,6 +1436,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
+  namespace: baremetal-operator-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -1443,39 +1449,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
----
-apiVersion: v1
-data:
-  CACHEURL: http://192.168.52.204/images
-  DEPLOY_KERNEL_URL: 'https://platform9-ironic-images.s3-us-west-1.amazonaws.com/Deploy+Images/centos-ironic-agent.kernel'
-  DEPLOY_RAMDISK_URL: 'https://platform9-ironic-images.s3-us-west-1.amazonaws.com/Deploy+Images/centos-ironic-agent.initramfs'
-  DHCP_RANGE: 192.168.52.230,192.168.52.250
-  HTTP_PORT: "6180"
-  IRONIC_ENDPOINT: http://192.168.52.204:6385/v1/
-  IRONIC_FAST_TRACK: "true"
-  IRONIC_INSPECTOR_ENDPOINT: http://192.168.52.204:5050/v1/
-  PROVISIONING_INTERFACE: br-ironic
-kind: ConfigMap
-metadata:
-  name: baremetal-operator-ironic
----
-apiVersion: v1
-data:
-  password: RUtmcU1aeGJaQVlhCg==
-  username: dDMzWkswaFgzYnpBCg==
-kind: Secret
-metadata:
-  name: ironic-credentials-t54g94554h
-type: Opaque
----
-apiVersion: v1
-data:
-  password: YWdVUnNxcGRWSTVTCg==
-  username: WENNUHlCMVY5V3dSCg==
-kind: Secret
-metadata:
-  name: ironic-inspector-credentials-5742m6879g
-type: Opaque
+  namespace: baremetal-operator-system
 ---
 apiVersion: v1
 kind: Service
@@ -1483,6 +1457,7 @@ metadata:
   labels:
     control-plane: controller-manager
   name: baremetal-operator-controller-manager-metrics-service
+  namespace: baremetal-operator-system
 spec:
   ports:
   - name: https
@@ -1495,6 +1470,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: baremetal-operator-webhook-service
+  namespace: baremetal-operator-system
 spec:
   ports:
   - port: 443
@@ -1510,6 +1486,7 @@ metadata:
     control-plane: controller-manager
     webhook: metal3-io-v1alpha1-baremetalhost
   name: baremetal-operator-controller-manager
+  namespace: baremetal-operator-system
 spec:
   replicas: 1
   selector:
@@ -1539,7 +1516,7 @@ spec:
         envFrom:
         - configMapRef:
             name: baremetal-operator-ironic
-        image: quay.io/metal3-io/baremetal-operator
+        image: {{ .QuayRegistry }}/metal3-io/baremetal-operator
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -1567,7 +1544,7 @@ spec:
         - --upstream=http://127.0.0.1:8085/
         - --logtostderr=true
         - --v=10
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+        image: {{ .GcrRegistry }}/kubebuilder/kube-rbac-proxy:v0.8.0
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443
@@ -1576,34 +1553,14 @@ spec:
       volumes:
       - name: ironic-credentials
         secret:
-          secretName: ironic-credentials-t54g94554h
+          secretName: ironic-credentials-secret
       - name: ironic-inspector-credentials
         secret:
-          secretName: ironic-inspector-credentials-5742m6879g
+          secretName: ironic-inspector-credentials-secret
       - name: cert
         secret:
           defaultMode: 420
           secretName: bmo-webhook-server-cert
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: baremetal-operator-serving-cert
-spec:
-  dnsNames:
-  - baremetal-operator-webhook-service.baremetal-operator-system.svc
-  - baremetal-operator-webhook-service.baremetal-operator-system.svc.cluster.local
-  issuerRef:
-    kind: Issuer
-    name: baremetal-operator-selfsigned-issuer
-  secretName: bmo-webhook-server-cert
----
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: baremetal-operator-selfsigned-issuer
-spec:
-  selfSigned: {}
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -1618,6 +1575,7 @@ webhooks:
   clientConfig:
     service:
       name: baremetal-operator-webhook-service
+      namespace: baremetal-operator-system
       path: /validate-metal3-io-v1alpha1-baremetalhost
   failurePolicy: Fail
   name: baremetalhost.metal3.io

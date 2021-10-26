@@ -1,0 +1,115 @@
+apiVersion: v1
+data:
+  DEPLOY_KERNEL_URL: "https://yash-testbucket.s3.ap-south-1.amazonaws.com/ironic-python-agent.kernel"
+  DEPLOY_RAMDISK_URL: "https://yash-testbucket.s3.ap-south-1.amazonaws.com/ironic-python-agent.initramfs"
+  DHCP_RANGE: {{ .Metal3DhcpRange }}
+  HTTP_PORT: "6180"
+  IRONIC_ENDPOINT: http://{{ .Metal3IronicHostIP }}:6385/v1/
+  IRONIC_FAST_TRACK: "true"
+  IRONIC_INSPECTOR_ENDPOINT: http://{{ .Metal3IronicHostIP }}:5050/v1/
+  PROVISIONING_INTERFACE: {{ .Metal3DhcpInterface }}
+kind: ConfigMap
+metadata:
+  name: baremetal-operator-ironic
+  namespace: baremetal-operator-system
+---
+apiVersion: v1
+data:
+  password: RUtmcU1aeGJaQVlhCg==
+  username: dDMzWkswaFgzYnpBCg==
+kind: Secret
+metadata:
+  name: ironic-credentials-secret
+  namespace: baremetal-operator-system
+type: Opaque
+---
+apiVersion: v1
+data:
+  password: YWdVUnNxcGRWSTVTCg==
+  username: WENNUHlCMVY5V3dSCg==
+kind: Secret
+metadata:
+  name: ironic-inspector-credentials-secret
+  namespace: baremetal-operator-system
+type: Opaque
+---
+
+apiVersion: v1
+data:
+  DEPLOY_KERNEL_URL: "https://yash-testbucket.s3.ap-south-1.amazonaws.com/ironic-python-agent.kernel"
+  DEPLOY_RAMDISK_URL: "https://yash-testbucket.s3.ap-south-1.amazonaws.com/ironic-python-agent.initramfs"
+  PROVISIONING_INTERFACE: {{ .Metal3DhcpInterface }}
+  DHCP_RANGE: {{ .Metal3DhcpRange }}
+{{- if .Metal3DhcpGateway }}
+  DHCP_DEFAULT_GW: {{ .Metal3DhcpGateway }}
+{{- end }}
+{{- if .Metal3DnsServer }}
+  DHCP_DNS_SERVER: {{ .Metal3DnsServer }}
+{{- end }}
+  HTTP_PORT: "6180"
+  IRONIC_ENDPOINT: http://{{ .Metal3IronicHostIP }}:6385/v1/
+  IRONIC_FAST_TRACK: "true"
+  INSPECTOR_REVERSE_PROXY_SETUP: "false"
+  IRONIC_INSPECTOR_ENDPOINT: http://{{ .Metal3IronicHostIP }}:5050/v1/
+  IRONIC_INSPECTOR_ENABLE_DISCOVERY: "true"
+  IRONIC_INSPECTOR_VLAN_INTERFACES: all
+  IRONIC_KERNEL_PARAMS: console=ttyS0
+  RESTART_CONTAINER_CERTIFICATE_UPDATED: "false"
+  JSON_RPC_AUTH_STRATEGY: "http_basic"
+kind: ConfigMap
+metadata:
+  name: ironic-bmo-configmap
+  namespace: baremetal-operator-system
+---
+apiVersion: v1
+data:
+  HTTP_BASIC_HTPASSWD: t33ZK0hX3bzA:$2y$05$0UboEZXSDkDg/vJagT0RBel4M5UO.ejpzNvWj0xtY6pe0QBFY7cyy
+kind: ConfigMap
+metadata:
+  name: ironic-htpasswd-configmap
+  namespace: baremetal-operator-system
+---
+apiVersion: v1
+data:
+  HTTP_BASIC_HTPASSWD: XCMPyB1V9WwR:$2y$05$LsrDnEuIVXenKmQHlddznesyi4boAQCfriPAaC63FaUJNgWT203V.
+kind: ConfigMap
+metadata:
+  name: ironic-inspector-htpasswd-configmap
+  namespace: baremetal-operator-system
+---
+apiVersion: v1
+data:
+  auth-config: W2lyb25pY10KYXV0aF90eXBlPWh0dHBfYmFzaWMKdXNlcm5hbWU9dDMzWkswaFgzYnpBCnBhc3N3b3JkPUVLZnFNWnhiWkFZYQo=
+kind: Secret
+metadata:
+  name: ironic-auth-config-secret
+  namespace: baremetal-operator-system
+type: Opaque
+---
+apiVersion: v1
+data:
+  auth-config: W2luc3BlY3Rvcl0KYXV0aF90eXBlPWh0dHBfYmFzaWMKdXNlcm5hbWU9WENNUHlCMVY5V3dSCnBhc3N3b3JkPWFnVVJzcXBkVkk1Uwo=
+kind: Secret
+metadata:
+  name: ironic-inspector-auth-config-secret
+  namespace: baremetal-operator-system
+type: Opaque
+---
+apiVersion: v1
+data:
+  auth-config: W2pzb25fcnBjXQphdXRoX3R5cGU9aHR0cF9iYXNpYwp1c2VybmFtZT10MzNaSzBoWDNiekEKcGFzc3dvcmQ9RUtmcU1aeGJaQVlhCg==
+kind: Secret
+metadata:
+  name: ironic-rpc-auth-config-secret
+  namespace: baremetal-operator-system
+type: Opaque
+---
+apiVersion: v1
+data:
+  password: Y2hhbmdlbWU=
+kind: Secret
+metadata:
+  name: mariadb-password-secret
+  namespace: baremetal-operator-system
+type: Opaque
+---
