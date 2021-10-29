@@ -19,11 +19,11 @@ spec:
       - command:
         - /bin/runironic-api
         env:
-        - name: MARIADB_PASSWORD
+        - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
               key: password
-              name: mariadb-password-secret
+              name: mysql-password-secret
         envFrom:
         - configMapRef:
             name: ironic-htpasswd-configmap
@@ -41,11 +41,11 @@ spec:
       - command:
         - /bin/runironic-conductor
         env:
-        - name: MARIADB_PASSWORD
+        - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
               key: password
-              name: mariadb-password-secret
+              name: mysql-password-secret
         envFrom:
         - configMapRef:
             name: ironic-htpasswd-configmap
@@ -92,25 +92,7 @@ spec:
         volumeMounts:
         - mountPath: /shared
           name: ironic-data-volume
-      - command:
-        - /bin/runmariadb
-        env:
-        - name: MARIADB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: mariadb-password-secret
-        - name: RESTART_CONTAINER_CERTIFICATE_UPDATED
-          valueFrom:
-            configMapKeyRef:
-              key: RESTART_CONTAINER_CERTIFICATE_UPDATED
-              name: ironic-bmo-configmap
-        image: platform9/ironic-image:latest
-        imagePullPolicy: Always
-        name: mariadb
-        volumeMounts:
-        - mountPath: /shared
-          name: ironic-data-volume
+  
       - command:
         - /bin/runlogwatch.sh
         image: platform9/ironic-image:latest
@@ -132,3 +114,20 @@ spec:
           secretName: ironic-rpc-auth-config-secret
       - emptyDir: {}
         name: ironic-data-volume
+      initContainers:
+        - name: dbinit
+          image: quay.io/metal3-io/ironic
+          imagePullPolicy: Always
+          command:
+            - /bin/createdb
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: root-password-secret
+                  key: password
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-password-secret
+                  key: password

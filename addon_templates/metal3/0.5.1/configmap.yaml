@@ -109,7 +109,15 @@ data:
   password: Y2hhbmdlbWU=
 kind: Secret
 metadata:
-  name: mariadb-password-secret
+  name: mysql-password-secret
   namespace: baremetal-operator-system
 type: Opaque
 ---
+apiVersion: v1
+data:
+  password: Y2hhbmdlbWU=
+kind: Secret
+metadata:
+  name: root-password-secret
+  namespace: baremetal-operator-system
+type: Opaque
