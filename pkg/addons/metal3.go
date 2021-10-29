@@ -115,7 +115,7 @@ func (c *Metal3Client) Install() error {
 
 	c.overrideRegistry()
 
-	yamlList := []string{"cert-manager.yaml", "configmap.yaml", "ironic.yaml", "bmo-cert.yaml", "bmo.yaml"}
+	yamlList := []string{"mysql.yaml","cert-manager.yaml", "configmap.yaml", "ironic.yaml", "bmo-cert.yaml", "bmo.yaml"}
 
 	for _, y := range yamlList {
 		inputFilePath := filepath.Join(inputPath, y)
@@ -141,7 +141,7 @@ func (c *Metal3Client) Uninstall() error {
 
 	c.overrideRegistry()
 
-	yamlList := []string{"bmo.yaml", "bmo-cert.yaml", "ironic.yaml", "configmap.yaml", "cert-manager.yaml"}
+	yamlList := []string{"bmo.yaml", "bmo-cert.yaml", "ironic.yaml", "configmap.yaml", "cert-manager.yaml","mysql.yaml"}
 
 	for index, y := range yamlList {
 		inputFilePath := filepath.Join(inputPath, y)
