@@ -15,24 +15,24 @@ spec:
         app: mysql
   spec:
     containers:
-    - image: mysql:5.7.35
-      name: mysql
-      env:
-      - name: MYSQL_ROOT_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: root-password-secret
-            key: password
-    ports:
-    - containerPort: 3306
-      name: mysql
-    volumeMounts:
-    - name: mysql-persistent-storage
-      mountPath: /var/lib/mysql
+      - image: mysql:5.7.35
+        name: mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: root-password-secret
+                key: password
+        ports:
+          - containerPort: 3306
+            name: mysql
+        volumeMounts:
+          - name: mysql-persistent-storage
+            mountPath: /var/lib/mysql
     volumes:
-    - name: mysql-persistent-storage
-      persistentVolumeClaim:
-        claimName: mysql-pv-claim
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
 
 ---
 apiVersion: v1
