@@ -1,8 +1,7 @@
-apiVersion: apps/v1
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
 kind: Deployment
 metadata:
   name: mysql
-  namespace: baremetal-operator-system
 spec:
   selector:
     matchLabels:
@@ -13,78 +12,14 @@ spec:
     metadata:
       labels:
         app: mysql
-  spec:
-    containers:
-      - image: mysql:5.7.35
+    spec:
+      containers:
+      - image: mysql:5.6
         name: mysql
         env:
-          - name: MYSQL_ROOT_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: root-password-secret
-                key: password
+          # Use secret in real usage
+        - name: MYSQL_ROOT_PASSWORD
+          value: password
         ports:
-          - containerPort: 3306
-            name: mysql
-        volumeMounts:
-          - name: mysql-persistent-storage
-            mountPath: /var/lib/mysql
-    volumes:
-      - name: mysql-persistent-storage
-        persistentVolumeClaim:
-          claimName: mysql-pv-claim
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql
-  namespace: baremetal-operator-system
-spec:
-  ports:
-  - port: 3306
-  selector:
-    app: mysql
-  clusterIP: None
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pv-claim
-  namespace: baremetal-operator-system
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: manual
-  resources:
-    requests:
-      storage: 20Gi
----
-
-
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: mysql-pv-volume
-  namespace: baremetal-operator-system
-  labels:
-    type: local
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 20Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/mnt/data"
-
----
-apiVersion: v1
-data:
-  password: Y2hhbmdlbWU=
-kind: Secret
-metadata:
-  name: root-password-secret
-  namespace: baremetal-operator-system
-type: Opaque
-
+        - containerPort: 3306
+          name: mysql
