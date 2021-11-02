@@ -29,7 +29,7 @@ spec:
             name: ironic-htpasswd-configmap
         - configMapRef:
             name: ironic-bmo-configmap
-        image: platform9/ironic-image:latest
+        image: quay.io/shwetachavan/ironicdb
         imagePullPolicy: Always
         name: ironic-api
         volumeMounts:
@@ -51,7 +51,7 @@ spec:
             name: ironic-htpasswd-configmap
         - configMapRef:
             name: ironic-bmo-configmap
-        image: platform9/ironic-image:latest
+        image: quay.io/shwetachavan/ironicdb
         imagePullPolicy: Always
         name: ironic-conductor
         volumeMounts:
@@ -70,7 +70,7 @@ spec:
             name: ironic-inspector-htpasswd-configmap
         - configMapRef:
             name: ironic-bmo-configmap
-        image: platform9/ironic-image:latest
+        image: quay.io/shwetachavan/ironicdb
         imagePullPolicy: Always
         name: ironic-inspector
         volumeMounts:
@@ -82,7 +82,7 @@ spec:
         envFrom:
         - configMapRef:
             name: ironic-bmo-configmap
-        image: platform9/ironic-image:latest
+        image: quay.io/shwetachavan/ironicdb
         imagePullPolicy: Always
         name: ironic-dnsmasq
         securityContext:
@@ -95,7 +95,7 @@ spec:
   
       - command:
         - /bin/runlogwatch.sh
-        image: platform9/ironic-image:latest
+        image: quay.io/shwetachavan/ironicdb
         imagePullPolicy: Always
         name: ironic-log-watch
         volumeMounts:
@@ -116,7 +116,7 @@ spec:
         name: ironic-data-volume
       initContainers:
         - name: dbinit
-          image: quay.io/metal3-io/ironic
+          image: quay.io/shwetachavan/ironicdb
           imagePullPolicy: Always
           command:
             - /bin/createdb
